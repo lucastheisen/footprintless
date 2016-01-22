@@ -1,0 +1,52 @@
+# NAME
+
+Footprintless - A ...
+
+# VERSION
+
+version 1.0
+
+# SYNOPSIS
+
+    use Footprintless;
+    my $footprintless = Footprintless->new();
+
+# DESCRIPTION
+
+This module provides ...
+It uses [Template::Resolver](https://metacpan.org/pod/Template::Resolver) to ...
+
+# CONSTRUCTORS
+
+## new(%options)
+
+Creates a new footprintless...
+available options are:
+
+- resolver
+
+    An instance of `Template::Resolver`.
+
+# METHODS
+
+## update(...)
+
+Will ...
+
+# AUTHOR
+
+Lucas Theisen <lucastheisen@pastdev.com>
+
+# COPYRIGHT AND LICENSE
+
+This software is copyright (c) 2015 by Lucas Theisen.
+
+This is free software; you can redistribute it and/or modify it under
+the same terms as the Perl 5 programming language system itself.
+
+# SEE ALSO
+
+Please see those modules/websites for more information related to this module.
+
+- [Template::Resolver](https://metacpan.org/pod/Template::Resolver)
+- [https://github.com/lucastheisen/footprintless](https://github.com/lucastheisen/footprintless)
