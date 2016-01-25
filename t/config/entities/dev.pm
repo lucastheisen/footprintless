@@ -1,31 +1,42 @@
 my $arcgis_home = '/opt/arcgis';
 my $gis_hostname = 'gis.local';
 my $gis_tomcat_directory = '/opt/project/gis-tomcat';
+my $gis_tomcat_hostname = 'tomcat.gis.local';
 my $gis_web_hostname = 'web.gis.local';
 
 return {
     gis => {
         automation => {
-            username => 'siteadmin',
+            username => $Config::Entities::properties->{'dev.gis.automation.username'},
             password => $Config::Entities::properties->{'dev.gis.automation.password'},
         },
         deployment => {
             arcgis_version => '10.3.1',
-            license => 'file:///cygdrive/C/Users/ltheisen/Downloads/authorization.ecp',
-            server => 'http://fasb3.mitre.org/ESRI/Version_10.3.1/ArcGIS_Server/ArcGIS_for_Server_Linux_1031_145870.tar.gz',
-            web_adaptor => 'org.mitre.caasd.arcgis:arcgis-web-adaptor:war:0.0.1-SNAPSHOT'
+            license => 'http://pastdev.com/arcgis/license/authorization.ecp',
+            server => 'http://pastdev.com/ArcGIS_for_Server_Linux_1031_145870.tar.gz',
+            web_adaptor => 'com.pastdev.arcgis:arcgis-web-adaptor:war:0.0.1-SNAPSHOT'
         },
         home => {
             arcgis_home => $arcgis_home
         },
         hostname => $gis_hostname,
+        logs => {
+            arcgis => "$arcgis_home/server/logs/serverlog",
+            catalina => {
+                file=>"$gis_tomcat_directory/logs/catalina.out", 
+                hostname => $gis_tomcat_hostname, 
+                sudo_username => 'gis-tomcat'
+            }
+        },
         sudo_username => 'arcgis',
         tomcat => {
             ajp => {
                 port => 8509
             },
+            http => {
+                port => 8580
+            },
             catalina_base => $gis_tomcat_directory,
-            catalina_pid => "/var/run/gis-tomcat/catalina.pid",
             jmx_port => 8587,
             jpda_port => 8586,
             service => {
@@ -34,8 +45,9 @@ return {
             },
             shutdown => {
                 port => 8505,
-                password => 'Y32zHJ9zr7bUHH2tQGgXY5cwq4DrZ8'
+                password => $Config::Entities::properties->{'dev.gis.tomcat.shutdown.password'},
             },
+            sudo_username => 'gis-tomcat',
             trust_store => {
                 'Config::Entities::inherit' => ['hostname', 'username', 'sudo_username'],
                 file => "$gis_tomcat_directory/certs/truststore.jks",

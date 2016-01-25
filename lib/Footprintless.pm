@@ -7,7 +7,11 @@ package Footprintless;
 # PODNAME: Footprintless
 
 use Carp;
+use Config::Entities;
+use Footprintless::CommandFactory;
+use Footprintless::CommandRunner;
 use Log::Any;
+use Template::Resolver;
 
 my $logger = Log::Any->get_logger();
 
@@ -15,15 +19,54 @@ sub new {
     return bless( {}, shift )->_init( @_ );
 }
 
+sub get_config {
+    my ($self, $coordinate) = @_;
+    return $self->{config}->get_entity($coordinate);
+}
 
 sub _init {
-    my ($self, $entity, %options) = @_;
+    my ($self, %options) = @_;
     
     $logger->debug( 'creating new Footprintless' );
 
-    $self->{resolver} = $options{resolver} || Template::Resolver->new();
+    if ($options{config}) {
+        $self->{config} = Config::Entities->new({entity => $options{config}});
+    }
+    else {
+        if ($options{config_dirs}) {
+            my @config_dirs = ref($options{config_dirs}) eq 'ARRAY' 
+                ? @{$options{config_dirs}} 
+                : $options{config_dirs};
+            my %config_options = (
+                $options{config_properties} 
+                    ? ('properties' => $options{config_properties}) 
+                    : (),
+                $options{config_properties_file} 
+                    ? ('properties_file' => $options{config_properties_file}) 
+                    : (),
+            );
+            
+            $self->{config} = Config::Entities->new(@config_dirs, 
+                (keys(%config_options) ? \%config_options : ()));
+        }
+        else {
+            croak('config or config_dirs is required');
+        }
+    }
+    $self->{resolver} = Template::Resolver->new($self->{config});
+    $self->{command_factory} = 
+        Footprintless::CommandFactory->new($self->{config});
+    $self->{command_runner} = $options{command_runner} 
+        || Footprintless::CommandRunner->new();
 
     return $self;
+}
+
+sub tail {
+    my ($self, $coordinate) = @_;
+
+    $self->{command_runner}->run_or_die(
+        $self->{command_factory}->tail_command($coordinate));
 }
 
 1;
@@ -56,5 +99,7 @@ Will read from C<$file_handle_or_name> replacing all placeholders prefixed by
 C<$placeholder_prefix>.
 
 =head1 SEE ALSO
+Config::Entities
 Template::Resolver
 https://github.com/lucastheisen/footprintless
+

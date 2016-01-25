@@ -1,0 +1,19 @@
+#!/usr/bin/env perl
+
+use strict;
+use warnings;
+
+package fpl;
+
+use Footprintless::App;
+
+# Let dzil --version know what to report:
+$main::VERSION = $Footprintless::VERSION;
+
+# PODNAME:  fpl
+# ABSTRACT: Run footprintless commands
+Footprintless::App->run();
+
+=head1 OVERVIEW
+For help with Footprintless try C<fpl commands> or C<fpl help>.
+=cut

@@ -1,6 +1,6 @@
 # NAME
 
-Footprintless - A ...
+Footprintless - A utility for managing systems with minimal installs
 
 # VERSION
 
@@ -9,37 +9,36 @@ version 1.0
 # SYNOPSIS
 
     use Footprintless;
-    my $footprintless = Footprintless->new();
 
 # DESCRIPTION
 
-This module provides ...
-It uses [Template::Resolver](https://metacpan.org/pod/Template::Resolver) to ...
+This module ...
 
 # CONSTRUCTORS
 
-## new(%options)
+## new(\\%entity, %options)
 
-Creates a new footprintless...
-available options are:
+Creates a new Footprintless agent.  Available options are:
 
 - resolver
 
-    An instance of `Template::Resolver`.
+    A preconfigured instance of Template::Resolver.  If not supplied, one
+    will be created with default configuration. 
 
 # METHODS
 
-## update(...)
+## update($entity)
 
-Will ...
+Will read from `$file_handle_or_name` replacing all placeholders prefixed by 
+`$placeholder_prefix`.
 
 # AUTHOR
 
-Lucas Theisen <lucastheisen@pastdev.com>
+Lucas Theisen &lt;lucastheisen@pastdev.com>
 
 # COPYRIGHT AND LICENSE
 
-This software is copyright (c) 2015 by Lucas Theisen.
+This software is copyright (c) 2016 by Lucas Theisen.
 
 This is free software; you can redistribute it and/or modify it under
 the same terms as the Perl 5 programming language system itself.
