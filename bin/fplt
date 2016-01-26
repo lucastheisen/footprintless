@@ -1,5 +1,8 @@
 #!/bin/bash
 
+
+# PODNAME: fplt
+
 PROJECT_DIR="$(cd -P "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 FPL_CONFIG_DIRS=$PROJECT_DIR/t/config/entities
 FPL_CONFIG_PROPERTIES=$PROJECT_DIR/t/config/credentials.pl
