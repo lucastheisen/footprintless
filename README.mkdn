@@ -47,5 +47,6 @@ the same terms as the Perl 5 programming language system itself.
 
 Please see those modules/websites for more information related to this module.
 
+- [Config::Entities](https://metacpan.org/pod/Config::Entities)
 - [Template::Resolver](https://metacpan.org/pod/Template::Resolver)
 - [https://github.com/lucastheisen/footprintless](https://github.com/lucastheisen/footprintless)

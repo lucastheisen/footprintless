@@ -15,6 +15,7 @@ use Data::Dumper;
 use Footprintless;
 use File::Basename;
 use File::Spec;
+print("REMOVE ME: ", Dumper(\@INC), "\n");
 
 my $test_dir = dirname( File::Spec->rel2abs( $0 ) );
 

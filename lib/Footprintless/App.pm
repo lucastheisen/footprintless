@@ -14,14 +14,15 @@ sub footprintless {
             || File::Spec->catdir($ENV{HOME}, '.footprintless');
         my @config_dirs = $ENV{FPL_CONFIG_DIRS}
             ? _split_dirs($ENV{FPL_CONFIG_DIRS})
-            : (File::Spec->catdir($fpl_home, 'entities'));
-        my $config_properties = $ENV{FPL_CONFIG_PROPS} 
-            || File::Spec->catdir($fpl_home, 'credentials.pl');
+            : (File::Spec->catdir($fpl_home, 'config'));
+        my @config_properties = $ENV{FPL_CONFIG_PROPS} 
+            ? _split_dirs($ENV{FPL_CONFIG_PROPS})
+            : File::Spec->catdir($fpl_home, 'properties.pl');
 
         require Footprintless;
         $self->{footprintless} = Footprintless->new(
             config_dirs => \@config_dirs,
-            config_properties_file => $config_properties);
+            config_properties_file => \@config_properties);
     }
 
     return $self->{footprintless};
@@ -32,7 +33,7 @@ sub _split_dirs {
 
     my @dirs = ();
     my $separator = ($^O eq 'MSWin32') ? ';' : ':';
-    foreach my $dir (split(/;/, $dirs_string)) {
+    foreach my $dir (split(/$separator/, $dirs_string)) {
         $dir =~ s/^\s+//;
         $dir =~ s/\s+$//;
         push(@dirs, $dir);

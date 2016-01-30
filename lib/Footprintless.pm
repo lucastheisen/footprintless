@@ -11,12 +11,31 @@ use Config::Entities;
 use Footprintless::CommandFactory;
 use Footprintless::CommandRunner;
 use Log::Any;
-use Template::Resolver;
 
 my $logger = Log::Any->get_logger();
 
 sub new {
     return bless( {}, shift )->_init( @_ );
+}
+
+sub copy {
+    my ($self, $source, $destination) = @_;
+
+    my $destination = $self->fill_config(
+        $coordinate,
+        {
+            'path' => 'Config::Entities::entity', 
+            hostname => undef,
+            ssh => undef,
+            ssh_username => undef,
+            sudo_username => undef
+        }, 
+        ancestry => 1);
+}
+
+sub fill_config {
+    my ($self, $coordinate, $spec, @options) = @_
+    return $self->{config}->fill($coordinate, $spec, @options);
 }
 
 sub get_config {
@@ -53,13 +72,30 @@ sub _init {
             croak('config or config_dirs is required');
         }
     }
-    $self->{resolver} = Template::Resolver->new($self->{config});
     $self->{command_factory} = 
         Footprintless::CommandFactory->new($self->{config});
     $self->{command_runner} = $options{command_runner} 
         || Footprintless::CommandRunner->new();
 
     return $self;
+}
+
+sub _location {
+    my ($self, $location) = @_;
+
+    my ($location_path, $location_options);
+    my $ref = ref($location);
+    if ($ref eq 'ARRAY') {
+        $location_path = $location->[0];
+        $location_options = $self->_location_options($location->[1]);
+    }
+
+    return wantarray 
+        ? $location_path, $location_options;
+        : {
+            'path' => $location_path, 
+            'options' => $location_options
+        };
 }
 
 sub tail {
