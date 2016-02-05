@@ -15,26 +15,26 @@ use Log::Any;
 my $logger = Log::Any->get_logger();
 
 sub new {
-    return bless( {}, shift )->_init( @_ );
+    return bless({}, shift)->_init(@_);
 }
 
 sub copy {
     my ($self, $source, $destination) = @_;
 
-    my $destination = $self->fill_config(
-        $coordinate,
-        {
-            'path' => 'Config::Entities::entity', 
-            hostname => undef,
-            ssh => undef,
-            ssh_username => undef,
-            sudo_username => undef
-        }, 
-        ancestry => 1);
+    #$destination = $self->fill_config(
+    #$coordinate,
+    #{
+    #'path' => 'Config::Entities::entity', 
+    #hostname => undef,
+    #ssh => undef,
+    #ssh_username => undef,
+    #sudo_username => undef
+    #}, 
+    #ancestry => 1);
 }
 
 sub fill_config {
-    my ($self, $coordinate, $spec, @options) = @_
+    my ($self, $coordinate, $spec, @options) = @_;
     return $self->{config}->fill($coordinate, $spec, @options);
 }
 
@@ -91,7 +91,7 @@ sub _location {
     }
 
     return wantarray 
-        ? $location_path, $location_options;
+        ? ($location_path, $location_options)
         : {
             'path' => $location_path, 
             'options' => $location_options
