@@ -2,40 +2,32 @@ use strict;
 use warnings;
 
 eval {
-    require Log::Log4perl;
-    Log::Log4perl->easy_init($Log::Log4perl::ERROR);
-    $Log::Log4perl::ERROR if (0); # prevent used only once warning
+    require Log::Any::Adapter;
+    Log::Any::Adapter->set('Stdout', log_level => 'error');
 };
 
-use Test::More tests => 3;
+use Test::More tests => 4;
 
 BEGIN {use_ok('Footprintless::CommandFactory')}
 
-use Config::Entities;
 use Footprintless::CommandFactory;
+use Footprintless::Localhost;
 
 my $factory = Footprintless::CommandFactory->new(
-    Config::Entities->new({
-        entity => {
-            dev => {
-                hostname => 'web.local',
-                logs => {
-                    access_log => '/var/log/httpd/access_log',
-                    catalina => {
-                        file => '/opt/apache/tomcat/logs/catalina.out',
-                        hostname => 'localhost',
-                        sudo_username => undef,
-                    }
-                },
-                ssh => 'ssh -q',
-                sudo_username => 'apache',
-            }
-        }
-    }));
+    default_ssh => 'ssh');
 
-is($factory->tail_command('dev.logs.access_log'), 
-    'ssh -q web.local "sudo -u apache tail -f /var/log/httpd/access_log"', 
-    'tail access_log');
-is($factory->tail_command('dev.logs.catalina'), 
-    'tail -f /opt/apache/tomcat/logs/catalina.out', 
-    'tail catalina');
+is($factory->tail_command('/silly'), 'tail -f /silly', 'tail silly');
+is(
+    $factory->tail_command('/silly',
+        $factory->command_options(
+            hostname => 'localhost'
+        )
+    ), 
+    'tail -f /silly', 'localhost tail silly');
+is(
+    $factory->tail_command('/silly',
+        $factory->command_options(
+            hostname => 'foo'
+        )
+    ), 
+    'ssh foo "tail -f /silly"', 'foo tail silly');

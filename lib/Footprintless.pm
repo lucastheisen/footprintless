@@ -10,6 +10,7 @@ use Carp;
 use Config::Entities;
 use Footprintless::CommandFactory;
 use Footprintless::CommandRunner;
+use Footprintless::Localhost;
 use Log::Any;
 
 my $logger = Log::Any->get_logger();
@@ -76,6 +77,10 @@ sub _init {
         Footprintless::CommandFactory->new($self->{config});
     $self->{command_runner} = $options{command_runner} 
         || Footprintless::CommandRunner->new();
+    $self->{localhost} = Footprintless::Localhost->new(
+        $options{localhost_aliases} 
+            ? (aliases => $options{localhost_aliases}) 
+            : ())->load_all();
 
     return $self;
 }
