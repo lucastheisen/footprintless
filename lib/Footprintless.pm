@@ -11,6 +11,7 @@ use Config::Entities;
 use Footprintless::CommandFactory;
 use Footprintless::CommandRunner;
 use Footprintless::Localhost;
+use Footprintless::Util qw(default_command_runner);
 use Log::Any;
 
 my $logger = Log::Any->get_logger();
@@ -76,7 +77,7 @@ sub _init {
     $self->{command_factory} = 
         Footprintless::CommandFactory->new($self->{config});
     $self->{command_runner} = $options{command_runner} 
-        || Footprintless::CommandRunner->new();
+        || default_command_runner();
     $self->{localhost} = Footprintless::Localhost->new(
         $options{localhost_aliases} 
             ? (aliases => $options{localhost_aliases}) 

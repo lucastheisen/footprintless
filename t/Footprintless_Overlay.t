@@ -7,8 +7,13 @@ use File::Path qw(make_path);
 use File::Spec;
 use Footprintless::CommandFactory;
 use Footprintless::Localhost;
-use Footprintless::Util qw(dumper slurp spurt);
-use Test::More tests => 8;
+use Footprintless::Util qw(
+    default_command_runner 
+    dumper 
+    slurp 
+    spurt
+);
+use Test::More tests => 11;
 
 BEGIN {use_ok('Footprintless::Overlay')}
 
@@ -143,8 +148,14 @@ sub temp_dirs {
 }
 
 SKIP: {
-    my $command_runner = Footprintless::CommandRunner->new();
-    $command_runner->run_or_die('ssh google.com echo hello');
+    my $command_runner = default_command_runner();
+    eval {
+        $command_runner->run_or_die('ssh localhost echo hello', 
+            {timeout => 2});
+    };
+    if ($@) {
+        skip("cannot ssh to localhost: $@", 3);
+    }
 
     my ($temp_dir, $base_dir, $to_dir, $template_dir) = temp_dirs();
     my $hostname = 'localhost';

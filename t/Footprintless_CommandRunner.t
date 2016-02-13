@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 12;
+use Test::More tests => 10;
 
 BEGIN {use_ok('Footprintless::CommandRunner::IPCRun3')}
 BEGIN {use_ok('Footprintless::CommandRunner::IPCRun')}

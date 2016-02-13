@@ -5,10 +5,16 @@ package Footprintless::Util;
 
 use Exporter qw(import);
 our @EXPORT_OK = qw(
+    default_command_runner
     dumper
     slurp
     spurt
 );
+
+sub default_command_runner {
+    require Footprintless::CommandRunner::IPCRun;
+    return Footprintless::CommandRunner::IPCRun->new(@_);
+}
 
 sub dumper {
     require Data::Dumper;

@@ -20,7 +20,7 @@ sub _init {
     if ($config->isa('Config::Entities')) {
         $self->{config} = $config;
     }
-    elsif (ref($config) eq 'HASH')) {
+    elsif (ref($config) eq 'HASH') {
         $self->{config} = Config::Entities->new(
             entity => $config);
     }

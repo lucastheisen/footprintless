@@ -27,15 +27,21 @@ sub run {
     $self->{last_call} = {};
 
     $logger->debugf('running [%s]', $options[0]);
-    my $exit_code = $self->_run(@options);
-    $self->{last_call}{exit_code} = $exit_code;
-
+    my $exit_code;
+    eval {
+        $exit_code = $self->_run(@options);
+        $self->{last_call}{exit_code} = $exit_code;
+    };
+    if ($@) {
+        $self->{last_call}{exception} = $@;
+        $exit_code = -1;
+    }
     return $exit_code;
 }
 
 sub run_or_die {
-    my ($self, $command, $runner_options) = @_;
-    my $exit_code = $self->run($command, $runner_options);
+    my ($self, $command, @runner_options) = @_;
+    my $exit_code = $self->run($command, @runner_options);
     if ($exit_code) {
         croak("$exit_code: " . ($self->{last_call}{stderr}
             ? $self->{last_call}{stderr}

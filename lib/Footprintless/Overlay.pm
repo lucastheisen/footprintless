@@ -22,11 +22,17 @@ sub clean {
     my $clean = $self->{spec}{clean};
     if ($clean) {
         $logger->debugf("cleaning overlay %s", $clean);
-        $self->{command_runner}->run_or_die(
-            $self->{command_factory}->batch_command(
-                $self->{command_factory}->rm_command(@$clean),
-                $self->{command_factory}->mkdir_command(@$clean),
-                $self->_command_options()));
+        eval {
+            $self->{command_runner}->run_or_die(
+                $self->{command_factory}->batch_command(
+                    $self->{command_factory}->rm_command(@$clean),
+                    $self->{command_factory}->mkdir_command(@$clean),
+                    $self->_command_options()));
+        };
+        if ($@) {
+            $logger->error('clean failed: %s', $@);
+            croak($@);
+        }
     }
 }
 
@@ -42,8 +48,14 @@ sub _init {
 
     $self->{entity} = $entity;
     $self->{spec} = $entity->get_entity($coordinate);
-    $self->{command_runner} = $options{command_runner}
-        || Footprintless::CommandRunner->new();
+    if ($options{command_runner}) {
+        $self->{command_runner} = $options{command_runner};
+    }
+    else {
+        require Footprintless::CommandRunner::IPCRun;
+        $self->{command_runner} = 
+            Footprintless::CommandRunner::IPCRun->new();
+    }
     $self->{localhost} = $options{localhost}
         || Footprintless::Localhost->new()->load_all();
     $self->{command_factory} = $options{command_factory}
