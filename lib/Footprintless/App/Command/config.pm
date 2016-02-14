@@ -4,6 +4,9 @@ use warnings;
 package Footprintless::App::Command::config;
 
 use Footprintless::App -command;
+use Log::Any;
+
+my $logger = Log::Any->get_logger();
 
 sub abstract {
     return 'prints the config at the coordinate';
@@ -21,6 +24,7 @@ sub execute {
 
     my $string;
     my $format = $opts->{format} || 'dumper1';
+    $logger->tracef('format=%s,config=%s', $format, $config);
     if ($format =~ /^dumper([0-3])?$/) {
         require Data::Dumper;
         my $indent = defined($1) ? $1 : 1;
@@ -31,12 +35,16 @@ sub execute {
     elsif ($format eq 'properties') {
         $self->usage_error("not yet implemented format [$format]");
     }
-    elsif ($format =~ /^json([01])?$/) {
+    elsif ($format =~ /^json([0-2])?$/) {
         require JSON;
         my $json = JSON->new();
         if (!defined($1) || $1 == 1) {
             $json->pretty();
         }
+        if ($1 == 2) {
+            $json->canonical(1);
+        }
+        $logger->tracef('json encode {{%s}}', $config);
         $string = $json->encode($config);
     }
     else {
