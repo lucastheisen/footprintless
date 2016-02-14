@@ -11,53 +11,39 @@ use Template::Resolver;
 my $logger = Log::Any->get_logger();
 
 sub abstract {
-    return 'performs an overlay';
+    return 'performs actions on an overlay';
 }
 
 sub description {
-    return 'performs an overlay';
+    return 'performs actions on an overlay';
 }
 
 sub execute {
     my ($self, $opts, $args) = @_;
     my ($coordinate) = @$args;
 
-    my $config = $self->{config};
+    my $overlay = $self->app()->footprintless()->overlay($coordinate);
 
-    my @overlay_opts = ();
-    if ($config->{key}) {
-        push(@overlay_opts, key => $config->{key});
+    if ($opts->{clean}) {
+        $logger->info('Performing clean...');
+        $overlay->clean();
     }
-
-    my @resolver_opts = ();
-    if ($config->{os}) {
-        push(@resolver_opts, os => $config->{os});
+    elsif ($opts->{initialize}) {
+        $logger->info('Performing initialize...');
+        $overlay->initialize();
     }
-    
-    my $overlay = Template::Overlay->new(
-        $self->{overlay_base_dir},
-        Template::Resolver->new(
-            $config->{resolver_coordinate}
-                ? $self->app()->footprintless()->get_config(
-                    $config->{resolver_coordinate})
-                : $config,
-            @resolver_opts),
-        @overlay_opts);
-
-    if ($opts->{clean} && $config->{clean}) {
-        $logger->info('Cleaning...');
+    else {
+        $logger->info('Performing update...');
+        $overlay->update();
     }
-
-    $logger->info('Performing overlay...');
-    $overlay->overlay($self->{overlay_template_dir},
-        to => $self->{overlay_to_dir});
 
     $logger->info('Done...');
 }
 
 sub opt_spec {
     return (
-        ["clean",  "will clean before overlay",],
+        ["clean",  "will clean the overlay",],
+        ["initialize",  "initialize the overlay",],
     );
 }
 
@@ -70,18 +56,12 @@ sub validate_args {
     my ($coordinate) = @$args;
 
     $self->usage_error("coordinate is required") unless @$args;
-    my $footprintless = $self->app()->footprintless();
-    $self->{config} = $footprintless->get_config($coordinate);
-    $self->usage_error("invalid coordinate [$coordinate]") unless $self->{config};
-    $self->{overlay_base_dir} = $self->{config}{base_dir};
-    $self->usage_error("overlay missing base_dir") unless $self->{overlay_base_dir};
-    $self->{overlay_template_dir} = $self->{config}{template_dir};
-    $self->usage_error("overlay missing template_dir") unless $self->{overlay_template_dir};
-    $self->{overlay_to_dir} = $self->{config}{to_dir};
-    $self->usage_error("overlay missing to_dir") unless $self->{overlay_to_dir};
 
-    $self->{overlay_resolver_coordinate} = $self->{config}{resolver_coordinate}
-        || $coordinate;
+    my $footprintless = $self->app()->footprintless();
+    eval {
+        $self->{overlay} = $self->app()->footprintless()->overlay($coordinate);
+    };
+    $self->usage_error("invalid coordinate [$coordinate]: $@") if ($@);
 }
 
 1;
