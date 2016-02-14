@@ -17,7 +17,7 @@ sub execute {
     my ($self, $opts, $args) = @_;
 
     my $config = $self->app()->footprintless()
-        ->get_config($args->[0]);
+        ->entities()->get_entity($args->[0]);
 
     my $string;
     my $format = $opts->{format} || 'dumper1';
