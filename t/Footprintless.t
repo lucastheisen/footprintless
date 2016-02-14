@@ -28,4 +28,4 @@ ok($fpl =
             $test_dir, 'config/credentials.pl')
     ), 'load data/entities');
 
-ok($fpl->get_config()->{dev}, 'root is dev');
+ok($fpl->entities()->{dev}, 'root is dev');

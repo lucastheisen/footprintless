@@ -62,7 +62,9 @@ sub _init {
 
         my @config_dirs = ();
         if ($options{config_dirs}) {
-            @config_dirs = @{$options{config_dirs}};
+            @config_dirs = ref($options{config_dirs}) eq 'ARRAY'
+                ? @{$options{config_dirs}}
+                : ($options{config_dirs});
         }
         elsif ($ENV{FPL_CONFIG_DIRS}) {
             @config_dirs = _split_dirs($ENV{FPL_CONFIG_DIRS});
