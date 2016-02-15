@@ -1,20 +1,28 @@
 use strict;
 use warnings;
 
-eval {
-    require Log::Any::Adapter;
-    Log::Any::Adapter->set('Stdout', log_level => 'error');
-};
-
 use Test::More tests => 3;
-
-BEGIN {use_ok('Footprintless')}
-
 use Data::Dumper;
 use Footprintless;
 use File::Basename;
 use File::Spec;
-print("REMOVE ME: ", Dumper(\@INC), "\n");
+
+BEGIN {use_ok('Footprintless')}
+
+eval {
+    require Getopt::Long;
+    Getopt::Long::Configure('pass_through', 'bundling');
+    my $level = 'error';
+    Getopt::Long::GetOptions(
+        'log:s' => \$level
+    );
+
+    require Log::Any::Adapter;
+    Log::Any::Adapter->set('Stdout', 
+        log_level => Log::Any::Adapter::Util::numeric_level($level));
+};
+
+my $logger = Log::Any->get_logger();
 
 my $test_dir = dirname( File::Spec->rel2abs( $0 ) );
 

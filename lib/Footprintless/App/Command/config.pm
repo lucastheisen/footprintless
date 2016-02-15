@@ -19,8 +19,9 @@ sub description {
 sub execute {
     my ($self, $opts, $args) = @_;
 
-    my $config = $self->app()->footprintless()
-        ->entities()->get_entity($args->[0]);
+    my $config = @$args
+        ? $self->app()->footprintless()->entities()->get_entity($args->[0])
+        : $self->app()->footprintless()->entities()->as_hashref();
 
     my $string;
     my $format = $opts->{format} || 'dumper1';
@@ -44,7 +45,6 @@ sub execute {
         if ($1 == 2) {
             $json->canonical(1);
         }
-        $logger->tracef('json encode {{%s}}', $config);
         $string = $json->encode($config);
     }
     else {
@@ -66,8 +66,6 @@ sub usage_desc {
 
 sub validate_args {
     my ($self, $opt, $args) = @_;
-
-    $self->usage_error("coordinate is required") unless @$args;
 }
 
 1;

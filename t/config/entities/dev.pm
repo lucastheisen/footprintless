@@ -1,77 +1,82 @@
-my $arcgis_home = '/opt/arcgis';
-my $gis_hostname = 'gis.local';
-my $gis_tomcat_directory = '/opt/project/gis-tomcat';
-my $gis_tomcat_hostname = 'tomcat.gis.local';
-my $gis_web_hostname = 'web.gis.local';
+my $root_dir = '/opt/pastdev';
+my $app_hostname = 'app.pastdev.local';
+my $trusted_hostname = 'trusted.pastdev.com';
+my $trusted_internal_hostname = 'trusted.pastdev.local';
+my $web_hostname = 'web.pastdev.com';
+
+my $coord = 'dev';
+my $foo_tomcat_directory = "$root_dir/foo-tomcat";
 
 return {
-    gis => {
+    base_tomcat => {
+        hostname => $app_hostname,
+        catalina_base => "$root_dir/apache-tomcat"
+    },
+    foo => {
         automation => {
-            username => $Config::Entities::properties->{'dev.gis.automation.username'},
-            password => $Config::Entities::properties->{'dev.gis.automation.password'},
+            username => $properties->{'dev.foo.automation.username'},
+            password => $properties->{'dev.foo.automation.password'},
         },
         deployment => {
-            arcgis_version => '10.3.1',
-            license => 'http://pastdev.com/arcgis/license/authorization.ecp',
-            server => 'http://pastdev.com/ArcGIS_for_Server_Linux_1031_145870.tar.gz',
-            web_adaptor => 'com.pastdev.arcgis:arcgis-web-adaptor:war:0.0.1-SNAPSHOT'
+            'com.pastdev.fpl:foo:war:1.0.0'
         },
-        home => {
-            arcgis_home => $arcgis_home
-        },
-        hostname => $gis_hostname,
+        hostname => $app_hostname,
         logs => {
-            arcgis => "$arcgis_home/server/logs/serverlog",
-            catalina => {
-                file=>"$gis_tomcat_directory/logs/catalina.out", 
-                hostname => $gis_tomcat_hostname, 
-                sudo_username => 'gis-tomcat'
-            }
+            catalina => "$foo_tomcat_directory/logs/catalina.out", 
         },
-        sudo_username => 'arcgis',
+        sudo_username => 'foo',
         tomcat => {
+            'Config::Entities::inherit' => ['hostname', 'sudo_username'],
             ajp => {
                 port => 8509
             },
             http => {
                 port => 8580
             },
-            catalina_base => $gis_tomcat_directory,
+            catalina_base => $foo_tomcat_directory,
             jmx_port => 8587,
             jpda_port => 8586,
+            overlay => {
+                'Config::Entities::inherit' => ['hostname', 'sudo_username'],
+                base_dir => "$properties{'dev.foo.tomcat.overlay.dir'}/base",
+                clean => [
+                    $foo_tomcat_directory
+                ],
+                key => 'T',
+                os => 'linux',
+                resolver_coordinate => $coord,
+                template_dir => "$properties{'dev.foo.tomcat.overlay.dir'}/template",
+                to_dir => $foo_tomcat_directory
+            },
             service => {
-                command => "$gis_tomcat_directory/bin/catalina.sh",
-                pid_file => "/var/run/gis-tomcat/catalina.pid",
+                command => "$foo_tomcat_directory/bin/catalina.sh",
+                pid_file => "/var/run/foo/catalina.pid",
             },
             shutdown => {
                 port => 8505,
-                password => $Config::Entities::properties->{'dev.gis.tomcat.shutdown.password'},
+                password => $properties->{'dev.foo.tomcat.shutdown.password'},
             },
-            sudo_username => 'gis-tomcat',
             trust_store => {
-                'Config::Entities::inherit' => ['hostname', 'username', 'sudo_username'],
-                file => "$gis_tomcat_directory/certs/truststore.jks",
-                imports => {
-                    mitre_ba_root => 'http://pki.mitre.org/MITRE%20BA%20Root.crt',
-                    mitre_ba_npe_ca1 => 'http://pki.mitre.org/MITRE%20BA%20NPE%20CA-1.crt'
-                },
+                'Config::Entities::inherit' => ['hostname', 'sudo_username'],
+                file => "$foo_tomcat_directory/certs/truststore.jks",
                 include_java_home_cacerts => 1,
-                password => $Config::Entities::properties->{'dev.gis.tomcat.trust_store.password'},
+                password => $properties->{'dev.foo.tomcat.trust_store.password'},
             }
         },
         web => {
-            hostname => $gis_web_hostname,
+            context_path => '/foo',
+            hostname => $foo_web_hostname,
             https => 1
         },
         web_direct => {
             'Config::Entities::inherit' => ['hostname'],
-            https => 0
+            context_path => '/foo',
+            https => 0,
+            port => 8580
         }
     },
-    piab => {
-        catalina_home => "/opt/apache-tomcat/apache-tomcat",
-        java_home => '/usr/lib/jvm/java',
-        os => 'linux',
-        tomcat_artifact => 'org.apache.tomcat:tomcat:zip:7.0.52'
-    },
+    trusted => {
+        hostname => $trusted_hostname,
+        internal_hostname => $trusted_internal_hostname
+    }
 }

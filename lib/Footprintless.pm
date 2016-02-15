@@ -91,6 +91,8 @@ sub _init {
             }
         }
             
+        $logger->tracef("constructing entities with\n\tconfig_dirs: %s\n\tconfig_options: %s)", 
+            \@config_dirs, {@config_options});
         $self->{entities} = Config::Entities->new(@config_dirs, {@config_options});
     }
 
@@ -113,7 +115,8 @@ sub localhost {
 sub overlay {
     my ($self, $coordinate, %options) = @_;
 
-    return Footprintless::Overlay->new($self->{entity}, $coordinate,
+    require Footprintless::Overlay;
+    return Footprintless::Overlay->new($self->{entities}, $coordinate,
         command_factory => $options{command_factory} || $self->command_factory(),
         command_runner => $options{command_runner} || $self->command_runner(),
         localhost => $options{localhost} || $self->localhost());

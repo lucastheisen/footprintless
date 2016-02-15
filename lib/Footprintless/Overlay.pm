@@ -128,6 +128,7 @@ sub update {
     my $is_local = $self->{localhost}->is_alias($self->{spec}{hostname});
     my $to_dir = $is_local ? $self->{spec}{to_dir} : $self->_temp_dir();
 
+    $logger->tracef("update to=[%s], template=[%s]", $to_dir, $self->{spec}{template_dir});
     $self->_overlay($to_dir)
         ->overlay($self->{spec}{template_dir});
 
