@@ -9,7 +9,7 @@ use File::Basename;
 use File::Path qw(make_path);
 use File::Spec;
 use File::Temp;
-use Test::More tests => 10;
+use Test::More tests => 21;
 
 BEGIN {use_ok('Footprintless::App')}
 
@@ -31,6 +31,8 @@ my $logger = Log::Any->get_logger();
 $logger->trace("All logging sent to stderr to avoid conflict with output");
 
 my $test_dir = dirname(File::Spec->rel2abs($0));
+my $base_bin_dir = File::Spec->catdir($test_dir, 'data', 'base', 'bin');
+my $base_conf_dir = File::Spec->catdir($test_dir, 'data', 'base', 'conf');
 my $expected_bin_dir = File::Spec->catdir($test_dir, 'data', 'expected', 'bin');
 my $expected_conf_dir = File::Spec->catdir($test_dir, 'data', 'expected', 'conf');
 
@@ -87,35 +89,61 @@ sub match {
         "$file_name matches expected");
 }
 
-my $temp_dir = File::Temp->newdir();
-my $overlay_dir = File::Spec->catdir($temp_dir, 'overlay');
-my $to_dir = File::Spec->catdir($overlay_dir, 'to');
-my $to_bin_dir = File::Spec->catdir($to_dir, 'bin');
-my $to_conf_dir = File::Spec->catdir($to_dir, 'conf');
-make_path($to_bin_dir, $to_conf_dir);
-my $footprintless = footprintless(
-    $temp_dir,
+sub test_overlay {
+    my ($args, $validator, $entity_modifier) = @_;
+
+    my $temp_dir = File::Temp->newdir();
+    my $overlay_dir = File::Spec->catdir($temp_dir, 'overlay');
+    my $to_dir = File::Spec->catdir($overlay_dir, 'to');
+    my $to_bin_dir = File::Spec->catdir($to_dir, 'bin');
+    my $to_conf_dir = File::Spec->catdir($to_dir, 'conf');
+    make_path($to_bin_dir, $to_conf_dir);
+    my $footprintless = footprintless($temp_dir, 
+        sub {
+            my ($entities) = @_;
+            my $overlay_entity = $entities->{dev}{foo}{tomcat}{overlay};
+            $overlay_entity->{hostname} = 'localhost';
+            delete $overlay_entity->{sudo_username};
+            $overlay_entity->{to_dir} = $to_dir;
+            &$entity_modifier($entities) if ($entity_modifier);
+        });
+
+    my $overlay = $footprintless->entities()->get_entity('dev.foo.tomcat.overlay');
+    if ($logger->is_trace) {
+        $logger->tracef('overlay: %s', Data::Dumper->new([$overlay])->Indent(1)->Dump());
+    }
+    is($overlay->{to_dir}, $to_dir, 'modified to dir');
+
+    my $result = test_app('Footprintless::App' => $args);
+    if ($logger->is_debug()) {
+        $logger->debugf("exit_code=[%s],error=[%s]\n----- STDOUT ----\n%s\n---- STDERR ----\n%s\n---- END ----", 
+            $result->exit_code(), $result->error(), $result->stdout(), $result->stderr());
+    }
+
+    &$validator($to_dir);
+}
+
+test_overlay(['overlay', 'dev.foo.tomcat.overlay'], 
     sub {
-        my ($entities) = @_;
-        my $overlay_entity = $entities->{dev}{foo}{tomcat}{overlay};
-        $overlay_entity->{hostname} = 'localhost';
-        delete $overlay_entity->{sudo_username};
-        $overlay_entity->{to_dir} = $to_dir;
+        my ($to_dir) = @_;
+        my $to_bin_dir = File::Spec->catdir($to_dir, 'bin');
+        my $to_conf_dir = File::Spec->catdir($to_dir, 'conf');
+
+        match('catalina.sh', $to_bin_dir, $expected_bin_dir);
+        match('setenv.sh', $to_bin_dir, $expected_bin_dir);
+        match('jndi-resources.xml', $to_conf_dir, $expected_conf_dir);
+        match('server.xml', $to_conf_dir, $expected_conf_dir);
     });
 
-my $overlay = $footprintless->entities()->get_entity('dev.foo.tomcat.overlay');
-if ($logger->is_trace) {
-    $logger->tracef('overlay: %s', Data::Dumper->new([$overlay])->Indent(1)->Dump());
-}
-is($overlay->{to_dir}, $to_dir, 'modified to dir');
+test_overlay(['overlay', 'dev.foo.tomcat.overlay', '--initialize'], 
+    sub {
+        my ($to_dir) = @_;
+        my $to_bin_dir = File::Spec->catdir($to_dir, 'bin');
+        my $to_conf_dir = File::Spec->catdir($to_dir, 'conf');
 
-my $result = test_app('Footprintless::App' => ['overlay', 'dev.foo.tomcat.overlay']);
-if ($logger->is_debug()) {
-    $logger->debugf("exit_code=[%s],error=[%s]\n----- STDOUT ----\n%s\n---- STDERR ----\n%s\n---- END ----", 
-        $result->exit_code(), $result->error(), $result->stdout(), $result->stderr());
-}
-
-match('catalina.sh', $to_bin_dir, $expected_bin_dir);
-match('setenv.sh', $to_bin_dir, $expected_bin_dir);
-match('jndi-resources.xml', $to_conf_dir, $expected_conf_dir);
-match('server.xml', $to_conf_dir, $expected_conf_dir);
+        match('catalina.sh', $to_bin_dir, $expected_bin_dir);
+        match('setenv.sh', $to_bin_dir, $expected_bin_dir);
+        match('jndi-resources.xml', $to_conf_dir, $expected_conf_dir);
+        match('server.xml', $to_conf_dir, $expected_conf_dir);
+        match('catalina.properties', $to_conf_dir, $base_conf_dir);
+    });

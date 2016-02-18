@@ -72,7 +72,7 @@ sub initialize {
 
     $self->clean();
 
-    $self->_overlay($to_dir)
+    $self->_overlay($self->{spec}{base_dir})
         ->overlay($self->{spec}{template_dir},
             to => $to_dir);
 

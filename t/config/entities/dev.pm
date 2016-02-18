@@ -34,6 +34,13 @@ return {
                 port => 8580
             },
             catalina_base => $foo_tomcat_directory,
+            deployment => {
+                _default => {
+                    to_dir => "$foo_tomcat_directory/webapps"
+                },
+                bar => 'bar.war',
+                baz => {file=>'bazfoo.war', rename=>'foobaz.war'}
+            },
             jmx_port => 8587,
             jpda_port => 8586,
             overlay => {
