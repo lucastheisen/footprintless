@@ -37,7 +37,8 @@ my $expected_bin_dir = File::Spec->catdir($test_dir, 'data', 'expected', 'bin');
 my $expected_conf_dir = File::Spec->catdir($test_dir, 'data', 'expected', 'conf');
 
 sub footprintless {
-    my ($temp_dir, $entity_modifier) = @_;
+    print("REMOVE ME: ", Dumper(\@_), "\n");
+    my ($temp_dir, $overlay_coordinate, $entity_modifier) = @_;
 
     # Get the current entities
     $ENV{FPL_CONFIG_DIRS} = File::Spec->catdir($test_dir, 'config', 'entities');
@@ -46,7 +47,7 @@ sub footprintless {
         . File::Spec->catfile($test_dir, 'config', 'environment.pl');
 
     my $footprintless = Footprintless->new();
-    my $overlay = $footprintless->entities()->get_entity('dev.foo.tomcat.overlay');
+    my $overlay = $footprintless->entities()->get_entity($overlay_coordinate);
     unless ($overlay->{base_dir} eq File::Spec->catfile($test_dir, 'data', 'base')
         && $overlay->{template_dir} eq File::Spec->catfile($test_dir, 'data', 'template')) {
         $logger->errorf("%s=[%s]\n%s=[%s]",
@@ -90,7 +91,7 @@ sub match {
 }
 
 sub test_overlay {
-    my ($args, $validator, $entity_modifier) = @_;
+    my ($action, $coordinate, %options) = @_;
 
     my $temp_dir = File::Temp->newdir();
     my $overlay_dir = File::Spec->catdir($temp_dir, 'overlay');
@@ -98,33 +99,42 @@ sub test_overlay {
     my $to_bin_dir = File::Spec->catdir($to_dir, 'bin');
     my $to_conf_dir = File::Spec->catdir($to_dir, 'conf');
     make_path($to_bin_dir, $to_conf_dir);
-    my $footprintless = footprintless($temp_dir, 
+    my $footprintless = footprintless($temp_dir, $coordinate,
         sub {
             my ($entities) = @_;
-            my $overlay_entity = $entities->{dev}{foo}{tomcat}{overlay};
+            my $overlay_entity = $entities;
+            foreach my $part (split(/\./, $coordinate)) {
+                $overlay_entity = $overlay_entity->{$part};
+            }
+
+            # convert to localhost and remove sudo_username to avoid ssh
             $overlay_entity->{hostname} = 'localhost';
             delete $overlay_entity->{sudo_username};
+
+            # set to_dir to the temp directory
             $overlay_entity->{to_dir} = $to_dir;
-            &$entity_modifier($entities) if ($entity_modifier);
+
+            &{$options{entity_modifier}}($entities) if ($options{entity_modifier});
         });
 
-    my $overlay = $footprintless->entities()->get_entity('dev.foo.tomcat.overlay');
+    my $overlay = $footprintless->entities()->get_entity($coordinate);
     if ($logger->is_trace) {
         $logger->tracef('overlay: %s', Data::Dumper->new([$overlay])->Indent(1)->Dump());
     }
     is($overlay->{to_dir}, $to_dir, 'modified to dir');
 
-    my $result = test_app('Footprintless::App' => $args);
+    my $result = test_app('Footprintless::App' => [$action, $coordinate, 
+            ($options{command_args} ? @{$options{command_args}} : ())]);
     if ($logger->is_debug()) {
         $logger->debugf("exit_code=[%s],error=[%s]\n----- STDOUT ----\n%s\n---- STDERR ----\n%s\n---- END ----", 
             $result->exit_code(), $result->error(), $result->stdout(), $result->stderr());
     }
 
-    &$validator($to_dir);
+    &{$options{validator}}($to_dir) if ($options{validator});
 }
 
-test_overlay(['overlay', 'dev.foo.tomcat.overlay'], 
-    sub {
+test_overlay('overlay', 'dev.foo.overlay', 
+    validator => sub {
         my ($to_dir) = @_;
         my $to_bin_dir = File::Spec->catdir($to_dir, 'bin');
         my $to_conf_dir = File::Spec->catdir($to_dir, 'conf');
@@ -135,8 +145,9 @@ test_overlay(['overlay', 'dev.foo.tomcat.overlay'],
         match('server.xml', $to_conf_dir, $expected_conf_dir);
     });
 
-test_overlay(['overlay', 'dev.foo.tomcat.overlay', '--initialize'], 
-    sub {
+test_overlay('overlay', 'dev.foo.overlay', 
+    command_args => ['--initialize'], 
+    validator => sub {
         my ($to_dir) = @_;
         my $to_bin_dir = File::Spec->catdir($to_dir, 'bin');
         my $to_conf_dir = File::Spec->catdir($to_dir, 'conf');

@@ -16,6 +16,16 @@ sub new {
     return bless({}, shift)->_init(@_);
 }
 
+sub agent {
+    my ($self) = @_;
+    unless ($self->{agent}) {
+        require LWP::UserAgent;
+        $self->{agent} = LWP::UserAgent->new();
+        $self->{agent}->env_proxy();
+    }
+    return $self->{agent};
+}
+
 sub command_factory {
     my ($self) = @_;
     unless ($self->{command_factory}) {
@@ -33,6 +43,17 @@ sub command_runner {
         $self->{command_runner} = Footprintless::Util::default_command_runner();
     }
     return $self->{command_runner};
+}
+
+sub deployment {
+    my ($self, $coordinate, %options) = @_;
+
+    require Footprintless::Deployment;
+    return Footprintless::Deployment->new($self->{entities}, $coordinate,
+        command_factory => $options{command_factory} || $self->command_factory(),
+        command_runner => $options{command_runner} || $self->command_runner(),
+        localhost => $options{localhost} || $self->localhost(),
+        resource_factory => $options{resource_factory} || $self->resource_factory());
 }
 
 sub entities {
@@ -120,6 +141,14 @@ sub overlay {
         command_factory => $options{command_factory} || $self->command_factory(),
         command_runner => $options{command_runner} || $self->command_runner(),
         localhost => $options{localhost} || $self->localhost());
+}
+
+sub resource_factory {
+    my ($self) = @_;
+    unless ($self->{resource_factory}) {
+        $self->{resource_factory} = Footprintless::ResourceFactory->new();
+    }
+    return $self->{resource_factory};
 }
 
 sub _split_dirs {

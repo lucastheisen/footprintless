@@ -18,11 +18,36 @@ return {
             password => $properties->{'dev.foo.automation.password'},
         },
         deployment => {
-            'com.pastdev.fpl:foo:war:1.0.0'
+            'Config::Entities::inherit' => ['hostname', 'sudo_username'],
+            configuration => {
+                default_to_dir => "$foo_tomcat_directory/webapps",
+                clean => [
+                    "$foo_tomcat_directory/conf/Catalina/localhost/",
+                    "$foo_tomcat_directory/temp/",
+                    "$foo_tomcat_directory/webapps/",
+                    "$foo_tomcat_directory/work/",
+                ],
+            },
+            resources => {
+                bar => 'bar.war',
+                baz => {file=>'bazfoo.war', rename=>'foobaz.war'}
+            }
         },
         hostname => $app_hostname,
         logs => {
             catalina => "$foo_tomcat_directory/logs/catalina.out", 
+        },
+        overlay => {
+            'Config::Entities::inherit' => ['hostname', 'sudo_username'],
+            base_dir => "$properties{'dev.foo.overlay.dir'}/base",
+            clean => [
+                $foo_tomcat_directory
+            ],
+            key => 'T',
+            os => 'linux',
+            resolver_coordinate => $coord,
+            template_dir => "$properties{'dev.foo.overlay.dir'}/template",
+            to_dir => $foo_tomcat_directory
         },
         sudo_username => 'foo',
         tomcat => {
@@ -34,27 +59,8 @@ return {
                 port => 8580
             },
             catalina_base => $foo_tomcat_directory,
-            deployment => {
-                _default => {
-                    to_dir => "$foo_tomcat_directory/webapps"
-                },
-                bar => 'bar.war',
-                baz => {file=>'bazfoo.war', rename=>'foobaz.war'}
-            },
             jmx_port => 8587,
             jpda_port => 8586,
-            overlay => {
-                'Config::Entities::inherit' => ['hostname', 'sudo_username'],
-                base_dir => "$properties{'dev.foo.tomcat.overlay.dir'}/base",
-                clean => [
-                    $foo_tomcat_directory
-                ],
-                key => 'T',
-                os => 'linux',
-                resolver_coordinate => $coord,
-                template_dir => "$properties{'dev.foo.tomcat.overlay.dir'}/template",
-                to_dir => $foo_tomcat_directory
-            },
             service => {
                 command => "$foo_tomcat_directory/bin/catalina.sh",
                 pid_file => "/var/run/foo/catalina.pid",

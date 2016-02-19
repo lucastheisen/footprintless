@@ -8,13 +8,15 @@ sub new {
 }
 
 sub _init {
-    my ($self, %spec) = @_;
+    my ($self, $url) = @_;
 
-    $self->{url} = $spec->{url};
-    $self->{path} = $spec->{path};
-    $self->{path_options} = $spec->{path_options};
+    $self->{url} = $url;
 
     return $self;
+}
+
+sub get_url {
+    return $_[0]->{url};
 }
 
 1;

@@ -35,11 +35,11 @@ $ENV{FPL_CONFIG_PROPS} = File::Spec->catfile($test_dir, 'config', 'credentials.p
 is(test_app('Footprintless::App' => 
     [
         'config',
-        'dev.foo.tomcat.overlay.os',
+        'dev.foo.overlay.os',
         '--format',
         'dumper0' 
     ])->stdout(), 
-    "\$VAR1 = 'linux';", 'dev.foo.tomcat.overlay.os = linux');
+    "\$VAR1 = 'linux';", 'dev.foo.overlay.os = linux');
 is(test_app('Footprintless::App' => 
     [
         'config', 

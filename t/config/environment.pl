@@ -5,5 +5,5 @@ my $data_dir = File::Spec->catdir(
     'data');
 
 return {
-    'dev.foo.tomcat.overlay.dir' => $data_dir,
+    'dev.foo.overlay.dir' => $data_dir,
 }
