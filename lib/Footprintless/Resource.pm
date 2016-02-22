@@ -8,7 +8,7 @@ sub new {
 }
 
 sub _init {
-    my ($self, $url) = @_;
+    my ($self, $url, $path) = @_;
 
     $self->{url} = $url;
 

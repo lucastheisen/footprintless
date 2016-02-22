@@ -6,4 +6,5 @@ my $data_dir = File::Spec->catdir(
 
 return {
     'dev.foo.overlay.dir' => $data_dir,
+    'dev.foo.deployment.resources.dir' => "$data_dir/resources",
 }

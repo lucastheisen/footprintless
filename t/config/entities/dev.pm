@@ -20,7 +20,7 @@ return {
         deployment => {
             'Config::Entities::inherit' => ['hostname', 'sudo_username'],
             configuration => {
-                default_to_dir => "$foo_tomcat_directory/webapps",
+                to_dir => "$foo_tomcat_directory/webapps",
                 clean => [
                     "$foo_tomcat_directory/conf/Catalina/localhost/",
                     "$foo_tomcat_directory/temp/",
@@ -29,8 +29,12 @@ return {
                 ],
             },
             resources => {
-                bar => 'bar.war',
-                baz => {file=>'bazfoo.war', rename=>'foobaz.war'}
+                bar => {
+                    type => 'maven', 
+                    coordinate=>'com.pastdev:bar:war:1.0.0', 
+                    rename=>'bar.war'
+                },
+                baz => "$properties{'dev.foo.deployment.resources.dir'}/baz.war"
             }
         },
         hostname => $app_hostname,

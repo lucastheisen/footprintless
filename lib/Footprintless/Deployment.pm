@@ -6,6 +6,9 @@ package Footprintless::Deployment;
 use File::Temp;
 use Footprintless::CommandFactory;
 use Footprintless::Localhost;
+use Footprintless::Util qw(
+    agent
+);
 use Log::Any;
 
 my $logger = Log::Any->get_logger();
@@ -20,11 +23,26 @@ sub _command_options {
 }
 
 sub deploy {
-    my ($self) = @_;
+    my ($self, @names) = @_;
     my $is_local = $self->{localhost}->is_alias($self->{spec}{hostname});
     my $to_dir = $is_local ? $self->{spec}{to_dir} : $self->_temp_dir();
 
-    $logger->tracef("deploy to=[%s], template=[%s]", $to_dir, $self->{spec}{template_dir});
+    my @names = scalar(@names) ? @names : keys(@{$self->{spec}{resources}});
+    $logger->debugf("deploy to=[%s]: %s", $to_dir, @names);
+    foreach my $name (@names);
+        my $resource_spec = $self->{spec}{resources}{$key};
+        my $resource = $self->{manager}->resolve($resource_spec)
+        croak("unknown resource $key") unless ($resource);
+
+        if (!ref($resource)) {
+            $resource = {file => $resource};
+        }
+
+        $self->{resource_manager}->download($resource, 
+            to => $resource_spec->{rename} 
+                ? File::Spec->catfile($to_dir, $resource_spec->{rename})
+                : $to_dir);
+    }
 
     $self->_push_to_destination($to_dir) unless ($is_local);
 }
@@ -36,6 +54,21 @@ sub _init {
 
     $self->{entity} = $entity;
     $self->{spec} = $entity->get_entity($coordinate);
+    if ($options{resource_manager}) {
+        $self->{resource_manager} = $options{resource_manager};
+    }
+    else {
+        my @providers = ();
+        my $agent = $options{agent} || agent();
+        if (require Maven::Agent) {
+            require Footprintless::Resource::MavenProvider;
+            push(@providers, Footprintless::Resource::MavenProvider->new(
+                agent => Maven::Agent->new(agent => $agent));
+        }
+        $self->{resource_manager} = Footprintless::ResourceManager->new(
+            @providers, 
+            Footprintless::Resource::UrlProvider->new(agent => $agent));
+    }
     if ($options{command_runner}) {
         $self->{command_runner} = $options{command_runner};
     }

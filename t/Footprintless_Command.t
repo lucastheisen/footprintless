@@ -1,15 +1,6 @@
 use strict;
 use warnings;
 
-eval {
-    require Log::Any::Adapter;
-    Log::Any::Adapter->set('Stdout', log_level => 'error');
-};
-
-use Test::More tests => 43;
-
-BEGIN {use_ok('Footprintless::Command')}
-
 use Data::Dumper;
 use Footprintless::Command qw(
     batch_command 
@@ -23,6 +14,14 @@ use Footprintless::Command qw(
     tail_command
     write_command
 );
+use Test::More tests => 43;
+
+BEGIN {use_ok('Footprintless::Command')}
+
+eval {
+    require Log::Any::Adapter;
+    Log::Any::Adapter->set('Stdout', log_level => 'error');
+};
 
 is( batch_command( 'cd foo', 'cd bar' ), 'cd foo;cd bar', 'batch cd foo then bar' );
 is( batch_command( 'cd foo', 'cd bar', command_options( hostname => 'baz' ) ),

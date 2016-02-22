@@ -1,6 +1,8 @@
 use strict;
 use warnings;
 
+use lib 't/lib';
+
 use App::Cmd::Tester;
 use Data::Dumper;
 use Footprintless;

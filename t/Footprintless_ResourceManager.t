@@ -1,13 +1,16 @@
 use strict;
 use warnings;
 
+use lib 't/lib';
+
 use File::Basename;
 use File::Spec;
 use File::Temp;
-use Footprintless::Util qw(slurp);
+use Footprintless::Test::Util qw(maven_agent);
 use Footprintless::Resource::UrlProvider;
+use Footprintless::Util qw(slurp);
 use LWP::UserAgent;
-use Test::More tests => 8;
+use Test::More tests => 10;
 
 BEGIN {use_ok('Footprintless::ResourceManager')}
 
@@ -43,14 +46,21 @@ my $http_url = "http://www.google.com/foo";
 is($manager->resource($http_url)->get_url(), $http_url, 'UrlProvider resolve http');
 
 SKIP: {
-    skip('Maven::Agent not installed', 3) unless (require Maven::Agent);
-    my $coordinate = 'javax.servlet:servlet-api:2.5';
-    my ($agent, $expected_artifact);
+    my $test_count = 4;
+    my $coordinate = 'com.pastdev:foo:pom:1.0.1';
+
+    my $temp_dir = File::Temp->newdir();
+    my $agent;
     eval {
-        $agent = Maven::Agent->new();
+        $agent = maven_agent($temp_dir);
+    };
+    skip($@, $test_count) if ($@);
+
+    my $expected_artifact;
+    eval {
         $expected_artifact = $agent->resolve_or_die($coordinate);
     };
-    skip('maven environment not setup', 3) if ($@);
+    skip('maven environment not setup', $test_count) if ($@);
     
     require Footprintless::Resource::MavenProvider;
     my $manager = Footprintless::ResourceManager->new(
@@ -58,6 +68,11 @@ SKIP: {
     is($manager->resource($coordinate)->get_artifact(),
         $expected_artifact,
         'MavenProvider resolve');
+    my $local_repo_artifact_path = File::Spec->catfile($temp_dir, 'HOME', '.m2', 'repository', 
+            'com', 'pastdev', 'foo', '1.0.1', 'foo-1.0.1.pom');
+    my $download_path = $manager->download($coordinate);
+    is($download_path, $local_repo_artifact_path, 'file found in local repo');
+    is(slurp($download_path), slurp($local_repo_artifact_path), 'artifact download matches');
 
     $manager = Footprintless::ResourceManager->new(
         Footprintless::Resource::MavenProvider->new($agent),
