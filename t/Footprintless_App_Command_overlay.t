@@ -39,7 +39,6 @@ my $expected_bin_dir = File::Spec->catdir($test_dir, 'data', 'expected', 'bin');
 my $expected_conf_dir = File::Spec->catdir($test_dir, 'data', 'expected', 'conf');
 
 sub footprintless {
-    print("REMOVE ME: ", Dumper(\@_), "\n");
     my ($temp_dir, $overlay_coordinate, $entity_modifier) = @_;
 
     # Get the current entities

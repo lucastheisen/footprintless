@@ -22,6 +22,10 @@ sub execute {
     my ($self, $opts, $args) = @_;
     my ($coordinate) = @$args;
 
+    if ($opts->{log}) {
+        $self->_configure_logging($opts->{log});
+    }
+
     my $overlay = $self->app()->footprintless()->overlay($coordinate);
 
     if ($opts->{clean}) {
@@ -40,8 +44,16 @@ sub execute {
     $logger->info('Done...');
 }
 
+sub _configure_logging {
+    my ($self, $level) = @_;
+    require Log::Any::Adapter;
+    Log::Any::Adapter->set('Stderr', 
+        log_level => Log::Any::Adapter::Util::numeric_level($level));
+}
+
 sub opt_spec {
     return (
+        ["log=s", "will set the log level",],
         ["clean",  "will clean the overlay",],
         ["initialize",  "initialize the overlay",],
     );

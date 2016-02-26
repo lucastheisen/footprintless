@@ -27,7 +27,7 @@ sub default_command_runner {
 sub dumper {
     require Data::Dumper;
     my $dumper = Data::Dumper->new(\@_);
-    $dumper->Indent(2);
+    $dumper->Indent(1);
     return $dumper->Dump(@_);
 }
 

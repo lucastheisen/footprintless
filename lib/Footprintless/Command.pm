@@ -94,7 +94,7 @@ sub cp_command {
         }
         else {
             # default, use tar
-            my @parts = ("tar c -C $source_path .");
+            my @parts = ("tar -c -C $source_path .");
             my @destination_parts = ();
             if ($cp_options{status}) {
                 push(@parts, join('', 
@@ -111,7 +111,7 @@ sub cp_command {
             push(@destination_parts, 
                 _sudo_command($destination_command_options 
                     && $destination_command_options->get_sudo_username(),
-                    "tar x -C $destination_path"));
+                    "tar -x -C $destination_path"));
 
             $source_command = command(pipe_command(@parts), 
                 $source_command_options);

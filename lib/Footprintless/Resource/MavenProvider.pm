@@ -5,7 +5,6 @@ package Footprintless::Resource::MavenProvider;
 
 use parent qw(Footprintless::Resource::Provider);
 
-
 sub _download {
     my ($self, $resource, %options) = @_;
     return $self->{maven_agent}->download($resource->get_artifact(), %options);
@@ -24,7 +23,7 @@ sub _init {
 sub resource {
     my ($self, $spec) = @_;
 
-    return $spec if ($spec->isa('Footprintless::Resource::Maven'));
+    return $spec if (UNIVERSAL::isa($spec, 'Footprintless::Resource::Maven'));
 
     return Footprintless::Resource::Maven->new(
         $self->{maven_agent}->resolve_or_die(
@@ -34,11 +33,15 @@ sub resource {
 sub supports {
     my ($self, $resource) = @_;
 
-    return 1 if ($resource->isa('Footprintless::Resource::Maven'));
+    return 1 if (UNIVERSAL::isa($resource, 'Footprintless::Resource::Maven'));
 
     my $ref = ref($resource);
-    return 1 if (!$ref && $resource =~ /^(?:[^:]+:){2,4}[^:]+$/);
-    return 1 if ($ref eq 'HASH' && $resource->{type} eq 'maven');
+    if ($ref) {
+        return 1 if ($resource->{coordinate});
+    }
+    elsif ($resource =~ /^(?:[^:]+:){2,4}[^:]+$/) {
+        return 1;
+    }
 
     return 0; 
 }

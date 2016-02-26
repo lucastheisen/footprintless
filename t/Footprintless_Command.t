@@ -89,22 +89,22 @@ is( cp_command( "abc", command_options(hostname=>'foo'), "def", command_options(
     'ssh foo "gzip -c abc"|ssh bar "gunzip|dd of=def"',
     'cp_command file source and destination command options compressed' );
 is( cp_command( "abc", "def" ),
-    'tar c -C abc .|tar x -C def',
+    'tar -c -C abc .|tar -x -C def',
     'directory cp_command simple' );
 is( cp_command( "abc", command_options(hostname=>'foo',sudo_username=>'foo_user'), "def" ),
-    'ssh foo "sudo -u foo_user tar c -C abc ."|tar x -C def',
+    'ssh foo "sudo -u foo_user tar -c -C abc ."|tar -x -C def',
     'directory cp_command source options' );
 is( cp_command( "abc", command_options(hostname=>'foo',sudo_username=>'foo_user'),
     "def", command_options(hostname=>'bar',sudo_username=>'bar_user') ),
-    'ssh foo "sudo -u foo_user tar c -C abc ."|ssh bar "sudo -u bar_user tar x -C def"',
+    'ssh foo "sudo -u foo_user tar -c -C abc ."|ssh bar "sudo -u bar_user tar -x -C def"',
     'directory cp_command source and destination options' );
 is( cp_command( "abc", command_options(hostname=>'foo',sudo_username=>'foo_user'),
     "def", command_options(hostname=>'bar',sudo_username=>'bar_user'), compress => 1 ),
-    'ssh foo "sudo -u foo_user tar c -C abc .|gzip"|ssh bar "gunzip|sudo -u bar_user tar x -C def"',
+    'ssh foo "sudo -u foo_user tar -c -C abc .|gzip"|ssh bar "gunzip|sudo -u bar_user tar -x -C def"',
     'directory compress cp_command source and destination options' );
 is( cp_command( "abc", command_options(hostname=>'foo',sudo_username=>'foo_user'),
     "def", command_options(hostname=>'bar',sudo_username=>'bar_user'), compress => 1, status => 1 ),
-    'ssh foo "sudo -u foo_user tar c -C abc .|pv -f -s \`sudo -u foo_user du -sb abc|cut -f1\`|gzip"|ssh bar "gunzip|sudo -u bar_user tar x -C def"',
+    'ssh foo "sudo -u foo_user tar -c -C abc .|pv -f -s \`sudo -u foo_user du -sb abc|cut -f1\`|gzip"|ssh bar "gunzip|sudo -u bar_user tar -x -C def"',
     'directory compress cp_command source and destination options with status' );
 is( cp_command( "abc", "def", archive => 'zip' ),
     'bash -c "cd abc;zip -qr - ."|dd of=def/temp_cp_command.zip;unzip -qod def def/temp_cp_command.zip;rm -f "def/temp_cp_command.zip"',

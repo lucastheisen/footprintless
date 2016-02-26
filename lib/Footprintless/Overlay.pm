@@ -3,6 +3,7 @@ use warnings;
 
 package Footprintless::Overlay;
 
+use Carp;
 use File::Temp;
 use Footprintless::CommandRunner;
 use Footprintless::Localhost;
@@ -48,6 +49,13 @@ sub _init {
 
     $self->{entity} = $entity;
     $self->{spec} = $entity->get_entity($coordinate);
+    croak("base_dir, to_dir, template_dir required") 
+        unless ($self->{spec}{base_dir}
+            && $self->{spec}{to_dir}
+            && $self->{spec}{template_dir});
+
+    $self->{agent} = $options{agent};
+    $self->{resource_manager} = $options{resource_manager};
     if ($options{command_runner}) {
         $self->{command_runner} = $options{command_runner};
     }
@@ -75,6 +83,25 @@ sub initialize {
     $self->_overlay($self->{spec}{base_dir})
         ->overlay($self->{spec}{template_dir},
             to => $to_dir);
+
+    if ($self->{spec}{deployment_coordinate}) {
+        $logger->debugf('deploying %s', $self->{spec}{deployment_coordinate});
+        require Footprintless::Deployment;
+        my $deployment = Footprintless::Deployment->new(
+            $self->{entity}, $self->{spec}{deployment_coordinate},
+            resource_manager => $self->{resource_manager},
+            agent => $self->{agent},
+            command_runner => $self->{command_runner},
+            localhost => $self->{localhost},
+            command_factory => $self->{command_factory});
+
+        # clean will ensure base directory is created if necessary
+        my @rebase = $is_local 
+            ? () 
+            : (rebase => {'from' => "$self->{spec}{to_dir}", to => "$to_dir"});
+        $deployment->clean(@rebase);
+        $deployment->deploy(@rebase);
+    }
 
     $self->_push_to_destination($to_dir) unless ($is_local);
 }
@@ -108,12 +135,10 @@ sub _resolver {
         push(@resolver_opts, os => $self->{spec}{os});
     }
 
-    return Template::Resolver->new(
-        $self->{spec}{resolver_coordinate}
-            ? $self->{entity}->get_entity(
-                $self->{spec}{resolver_coordinate})
-            : $self->{spec},
-        @resolver_opts),
+    my $resolver_spec = $self->{spec}{resolver_coordinate}
+        ? $self->{entity}->get_entity($self->{spec}{resolver_coordinate})
+        : $self->{spec};
+    return Template::Resolver->new($resolver_spec, @resolver_opts);
 }
 
 sub _temp_dir {

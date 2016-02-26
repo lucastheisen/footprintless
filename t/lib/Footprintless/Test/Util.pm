@@ -21,7 +21,7 @@ use Footprintless::Util qw(
 
 our @EXPORT_OK = qw(
     command_runner
-    lwp
+    is_empty_dir
     maven_agent
 );
 
@@ -34,6 +34,15 @@ my $default_maven_user_home = File::Spec->catfile(
 sub command_runner {
     my ($name) = shift || 'IPCRun';
     return "Footprintless::CommandRunner::$name"->new();
+}
+
+sub is_empty_dir {
+    my ($dir) = @_;
+    opendir(my $handle, $dir) or die "Not a directory";
+    return 
+        scalar(
+            grep { $_ ne "." && $_ ne ".." } readdir($handle)
+        ) == 0;
 }
 
 sub maven_agent {

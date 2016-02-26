@@ -42,7 +42,7 @@ sub _init {
 sub resource {
     my ($self, $spec) = @_;
 
-    return $spec if ($spec->isa('Footprintless::Resource::Url'));
+    return $spec if (UNIVERSAL::isa($spec, 'Footprintless::Resource::Url'));
 
     return Footprintless::Resource::Url->new(ref($spec) ? $spec->{url} : $spec);
 }

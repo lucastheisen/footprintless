@@ -53,7 +53,7 @@ sub deployment {
         command_factory => $options{command_factory} || $self->command_factory(),
         command_runner => $options{command_runner} || $self->command_runner(),
         localhost => $options{localhost} || $self->localhost(),
-        resource_factory => $options{resource_factory} || $self->resource_factory());
+        resource_manager => $options{resource_manager} || $self->resource_manager());
 }
 
 sub entities {
@@ -140,15 +140,27 @@ sub overlay {
     return Footprintless::Overlay->new($self->{entities}, $coordinate,
         command_factory => $options{command_factory} || $self->command_factory(),
         command_runner => $options{command_runner} || $self->command_runner(),
-        localhost => $options{localhost} || $self->localhost());
+        localhost => $options{localhost} || $self->localhost(),
+        resource_manager => $options{resource_manager} || $self->resource_manager());
 }
 
-sub resource_factory {
+sub resource_manager {
     my ($self) = @_;
-    unless ($self->{resource_factory}) {
-        $self->{resource_factory} = Footprintless::ResourceFactory->new();
+    unless ($self->{resource_manager}) {
+        require Footprintless::ResourceManager;
+        my @providers = ();
+        my $agent = $self->agent();
+        if (require Maven::Agent) {
+            require Footprintless::Resource::MavenProvider;
+            push(@providers, Footprintless::Resource::MavenProvider->new(
+                Maven::Agent->new(agent => $agent)));
+        }
+        require Footprintless::Resource::UrlProvider;
+        $self->{resource_manager} = Footprintless::ResourceManager->new(
+            @providers, 
+            Footprintless::Resource::UrlProvider->new($agent));
     }
-    return $self->{resource_factory};
+    return $self->{resource_manager};
 }
 
 sub _split_dirs {
