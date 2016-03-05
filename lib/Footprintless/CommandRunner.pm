@@ -17,19 +17,36 @@ sub _init {
     return $self;
 }
 
+sub get_exception {
+    return $_[0]->{last_call}{exception};
+}
+
+sub get_exit_code {
+    return $_[0]->{last_call}{exit_code};
+}
+
+sub get_stderr {
+    return $_[0]->{last_call}{stderr};
+}
+
+sub get_stdout {
+    return $_[0]->{last_call}{stdout};
+}
+
 sub _run {
     croak("must use an implementation class");
 }
 
 sub run {
-    my ($self, @options) = @_;
+    my ($self, $command, @runner_options) = @_;
 
     $self->{last_call} = {};
 
-    $logger->debugf('running [%s]', $options[0]);
+    $logger->debugf('running [%s]', $command);
+    $logger->tracef('with options %s', \@runner_options);
     my $exit_code;
     eval {
-        $exit_code = $self->_run(@options);
+        $exit_code = $self->_run($command, @runner_options);
         $self->{last_call}{exit_code} = $exit_code;
     };
     if ($@) {
@@ -43,8 +60,8 @@ sub run_or_die {
     my ($self, $command, @runner_options) = @_;
     my $exit_code = $self->run($command, @runner_options);
     if ($exit_code) {
-        croak("$exit_code: " . ($self->{last_call}{stderr}
-            ? $self->{last_call}{stderr}
+        croak("$exit_code: " . ($self->{last_call}{exception}
+            ? $self->{last_call}{exception}
             : ''));
     }
     return $self->{last_call}{stdout};

@@ -132,17 +132,17 @@ is(rm_command('/foo', '/bar/', 'baz', 'foz/'), 'bash -c "rm -rf \\"/bar/\\" \\"f
 
 is( sed_command('s/foo/bar/'), 'sed -e \'s/foo/bar/\'', 'simple sed' );
 
-is(tail_command('access_log'), 'tail -f access_log', 'tail access_log');
-is(tail_command('access_log', command_options(sudo_username => 'apache')),
+is(tail_command('access_log', follow => 1), 'tail -f access_log', 'tail access_log');
+is(tail_command('access_log', follow => 1, command_options(sudo_username => 'apache')),
     'sudo -u apache tail -f access_log', 
     'tail access_log');
-is(tail_command('access_log', command_options(sudo_username => 'apache', hostname => 'localhost')),
+is(tail_command('access_log', follow => 1, command_options(sudo_username => 'apache', hostname => 'localhost')),
     'ssh localhost "sudo -u apache tail -f access_log"', 
     'tail access_log localhost');
-is(tail_command('access_log', command_options(sudo_username => 'apache', hostname => 'foo')),
+is(tail_command('access_log', follow => 1, command_options(sudo_username => 'apache', hostname => 'foo')),
     'ssh foo "sudo -u apache tail -f access_log"', 
     'tail access_log foo');
-is(tail_command('access_log', command_options(ssh => 'ssh -q', sudo_username => 'apache', hostname => 'foo')),
+is(tail_command('access_log', follow => 1, command_options(ssh => 'ssh -q', sudo_username => 'apache', hostname => 'foo')),
     'ssh -q foo "sudo -u apache tail -f access_log"', 
     'ssh -q tail access_log foo');
 

@@ -249,7 +249,13 @@ sub tail_command {
         {},
         @_,
         sub {
-            return "tail -f $_[0]";
+            my ($file, %options) = @_;
+            my @command = ('tail');
+            if ($options{follow}) {
+                push(@command, '-f');
+            }
+            push(@command, $file);
+            return join(' ', @command);
         }
     );
 }

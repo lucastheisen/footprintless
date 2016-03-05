@@ -5,7 +5,7 @@ use Config::Entities;
 use File::Basename;
 use File::Path qw(make_path);
 use File::Spec;
-use Footprintless::CommandFactory;
+use Footprintless::CommandOptionsFactory;
 use Footprintless::Localhost;
 use Footprintless::Util qw(
     default_command_runner 

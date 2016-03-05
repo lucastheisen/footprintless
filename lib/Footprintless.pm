@@ -8,6 +8,7 @@ package Footprintless;
 
 use Carp;
 use Config::Entities;
+use Footprintless::Util;
 use Log::Any;
 
 my $logger = Log::Any->get_logger();
@@ -19,19 +20,18 @@ sub new {
 sub agent {
     my ($self) = @_;
     unless ($self->{agent}) {
-        require LWP::UserAgent;
-        $self->{agent} = LWP::UserAgent->new();
-        $self->{agent}->env_proxy();
+        $self->{agent} = Footprintless::Util::agent();
     }
     return $self->{agent};
 }
 
-sub command_factory {
+sub command_options_factory {
     my ($self) = @_;
-    unless ($self->{command_factory}) {
-        require Footprintless::CommandFactory;
-        $self->{command_factory} = 
-            Footprintless::CommandFactory->new(localhost => $self->localhost());
+    unless ($self->{command_options_factory}) {
+        require Footprintless::CommandOptionsFactory;
+        $self->{command_options_factory} = 
+            Footprintless::CommandOptionsFactory->new(
+                localhost => $self->localhost());
     }
     return $self->{command_factory};
 }
@@ -50,10 +50,14 @@ sub deployment {
 
     require Footprintless::Deployment;
     return Footprintless::Deployment->new($self->{entities}, $coordinate,
-        command_factory => $options{command_factory} || $self->command_factory(),
-        command_runner => $options{command_runner} || $self->command_runner(),
-        localhost => $options{localhost} || $self->localhost(),
-        resource_manager => $options{resource_manager} || $self->resource_manager());
+        command_options_factory => $options{command_options_factory} 
+            || $self->command_options_factory(),
+        command_runner => $options{command_runner} 
+            || $self->command_runner(),
+        localhost => $options{localhost} 
+            || $self->localhost(),
+        resource_manager => $options{resource_manager} 
+            || $self->resource_manager());
 }
 
 sub entities {
@@ -119,7 +123,7 @@ sub _init {
 
     $self->{command_runner} = $options{command_runner};
     $self->{localhost} = $options{localhost};
-    $self->{command_factory} = $options{command_factory};
+    $self->{command_options_factory} = $options{command_options_factory};
 
     return $self;
 }
@@ -138,10 +142,14 @@ sub overlay {
 
     require Footprintless::Overlay;
     return Footprintless::Overlay->new($self->{entities}, $coordinate,
-        command_factory => $options{command_factory} || $self->command_factory(),
-        command_runner => $options{command_runner} || $self->command_runner(),
-        localhost => $options{localhost} || $self->localhost(),
-        resource_manager => $options{resource_manager} || $self->resource_manager());
+        command_options_factory => $options{command_options_factory} 
+            || $self->command_options_factory(),
+        command_runner => $options{command_runner} 
+            || $self->command_runner(),
+        localhost => $options{localhost} 
+            || $self->localhost(),
+        resource_manager => $options{resource_manager} 
+            || $self->resource_manager());
 }
 
 sub resource_manager {

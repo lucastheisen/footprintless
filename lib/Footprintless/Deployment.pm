@@ -5,7 +5,13 @@ package Footprintless::Deployment;
 
 use Carp;
 use File::Temp;
-use Footprintless::CommandFactory;
+use Footprintless::Command qw(
+    batch_command
+    cp_command
+    mkdir_command
+    rm_command
+);;
+use Footprintless::CommandOptionsFactory;
 use Footprintless::Localhost;
 use Footprintless::ResourceManager;
 use Footprintless::Resource::UrlProvider;
@@ -39,9 +45,9 @@ sub clean {
         $logger->debugf("cleaning overlay %s", \@clean);
         eval {
             $self->{command_runner}->run_or_die(
-                $self->{command_factory}->batch_command(
-                    $self->{command_factory}->rm_command(@clean),
-                    $self->{command_factory}->mkdir_command(@clean),
+                batch_command(
+                    rm_command(@clean),
+                    mkdir_command(@clean),
                     $self->_command_options()));
         };
         if ($@) {
@@ -53,7 +59,7 @@ sub clean {
 
 sub _command_options {
     my ($self) = @_;
-    return $self->{command_factory}->command_options(%{$self->{spec}});
+    return $self->{command_options_factory}->command_options(%{$self->{spec}});
 }
 
 sub _rebase {
@@ -139,8 +145,8 @@ sub _init {
     }
     $self->{localhost} = $options{localhost}
         || Footprintless::Localhost->new()->load_all();
-    $self->{command_factory} = $options{command_factory}
-        || Footprintless::CommandFactory->new(
+    $self->{command_options_factory} = $options{command_options_factory}
+        || Footprintless::CommandOptionsFactory->new(
             localhost => $self->{localhost});
 
     return $self;
@@ -150,7 +156,7 @@ sub _push_to_destination {
     my ($self, $temp_dir) = @_;
 
     $self->{command_runner}->run_or_die(
-        $self->{command_factory}->cp_command(
+        cp_command(
             $temp_dir, 
             $self->{spec}{configuration}{to_dir}, 
             $self->_command_options(),

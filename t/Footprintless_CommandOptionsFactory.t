@@ -8,24 +8,23 @@ eval {
 
 use Test::More tests => 4;
 
-BEGIN {use_ok('Footprintless::CommandFactory')}
+BEGIN {use_ok('Footprintless::CommandOptionsFactory')}
 
+use Footprintless::Command qw(tail_command);
 use Footprintless::CommandFactory;
 use Footprintless::Localhost;
 
-my $factory = Footprintless::CommandFactory->new(
+my $factory = Footprintless::CommandOptionsFactory->new(
     default_ssh => 'ssh');
 
-is($factory->tail_command('/silly'), 'tail -f /silly', 'tail silly');
-is(
-    $factory->tail_command('/silly',
+is(tail_command('/silly', follow => 1), 'tail -f /silly', 'tail silly');
+is(tail_command('/silly', follow => 1,
         $factory->command_options(
             hostname => 'localhost'
         )
     ), 
     'tail -f /silly', 'localhost tail silly');
-is(
-    $factory->tail_command('/silly',
+is(tail_command('/silly', follow => 1,
         $factory->command_options(
             hostname => 'foo'
         )
