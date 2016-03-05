@@ -27,7 +27,8 @@ sub follow {
             $self->_runner_options($options{runner_options}, $options{until}));
     };
     if ($@) {
-        croak ($@) unless ($self->{command_runner}->get_exception() =~ /^until found .*$/) 
+        my $exception = $self->{command_runner}->get_exception();
+        croak ($@) unless ($exception && $exception =~ /^until found .*$/) 
     }
 }
 
@@ -89,20 +90,23 @@ sub _runner_options {
             };
         }
         else {
-            my $handle = $runner_options->{out_handle} || \*STDOUT;
+            my $handle = $runner_options->{out_handle};
             $options->{out_callback} = sub {
                 my ($line) = @_;
-                print($handle $line);
+                print($handle $line) if ($handle);
                 die ('until found') if ($line =~ $until);
             };
         }
     }
 
-    if ($runner_options->{err_callback}) {
+    if (exists($runner_options->{err_buffer})) {
+        $options->{err_buffer} = $runner_options->{err_buffer};
+    }
+    elsif (exists($runner_options->{err_callback})) {
         $options->{err_callback} = $runner_options->{err_callback};
     }
-    else {
-        $options->{err_handle} = ($runner_options->{err_handle} || \*STDERR);
+    elsif (exists($runner_options->{err_handle})) {
+        $options->{err_handle} = $runner_options->{err_handle};
     }
 
     return $options;

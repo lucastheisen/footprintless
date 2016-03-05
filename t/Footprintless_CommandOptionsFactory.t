@@ -11,7 +11,6 @@ use Test::More tests => 4;
 BEGIN {use_ok('Footprintless::CommandOptionsFactory')}
 
 use Footprintless::Command qw(tail_command);
-use Footprintless::CommandFactory;
 use Footprintless::Localhost;
 
 my $factory = Footprintless::CommandOptionsFactory->new(

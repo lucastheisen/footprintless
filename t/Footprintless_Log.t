@@ -38,16 +38,12 @@ my $test_dir = dirname(File::Spec->rel2abs($0));
 
 {
     my $file = File::Temp->new();
-    open(my $handle, '>', $file);
-    print($handle "foo\n");
-    close($handle);
-    print("REMOVE ME: wrote to $file\n");
-
+    my @expected = ('foo', 'foo', 'foo', 'bar');
     my $pid = fork();
     if ($pid == 0) {
         $logger->debug("started child");
-        open($handle, '>>', $file);
-        foreach my $line ('foo', 'foo', 'foo', 'bar', 'foo') {
+        open(my $handle, '>>', $file);
+        foreach my $line (@expected, 'foo') {
             print($handle "$line\n");
             usleep(250000);
         }
@@ -57,9 +53,7 @@ my $test_dir = dirname(File::Spec->rel2abs($0));
     }
 
     $logger->debug("started parent");
-    my ($out, $err);
-    if (1) {
-        print("REMOVE ME:WTF?\n");
+    my (@out);
     Footprintless::Log->new(
         Config::Entities->new({
             entity => {
@@ -69,38 +63,13 @@ my $test_dir = dirname(File::Spec->rel2abs($0));
             }
         }),
         'logs.foo')
-        ->follow(
-            until => qr/^bar$/, 
-            runner_options => {out_buffer => \$out, err_buffer => \$err});
-    }
-    else {
-        use IPC::Run;
-        eval {
-            IPC::Run::run(
-                ["tail",  "-f", $file], 
-                '>', sub {
-                    my ($line) = @_;
-                    print("REMOVE ME: [$line]\n");
-                    $out .= $line;
-                    if ($line =~ /bar/) {
-                        print("REMOVE ME: bar found, now die\n");
-                        die("until found");
-                    }
-                },
-                '2>', \*STDERR);
-        };
-        if ($@) {
-            print("REMOVE ME: [$@]\n");
-            die($@) unless ($@ =~ /^ack until found /);
-        }
-        
-        $out = "foo\nfoo\nfoo\nfoo\nbar\n";
-    }
+        ->follow(until => qr/^bar$/, runner_options => {
+            out_callback => sub {push(@out, @_)}
+        });
 
     wait();
 
-    print("REMOVE ME: wait complete\n");
-    is($out, "foo\nfoo\nfoo\nfoo\nbar\n", 'until');
+    is_deeply(\@out, \@expected, 'until');
 }
 
 print("Done\n");

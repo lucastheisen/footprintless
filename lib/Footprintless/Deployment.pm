@@ -93,7 +93,7 @@ sub deploy {
         ? @{$options{names}}
         : keys(%{$self->{spec}{resources}});
 
-    $logger->debugf("deploy %s to '%s'", \@names, $to_dir);
+    $logger->debugf("deploy %s to %s", \@names, $to_dir);
     foreach my $name (@names) {
         my $resource_spec = $self->{spec}{resources}{$name};
         my $resource = $self->{resource_manager}->resource($resource_spec);
@@ -109,8 +109,9 @@ sub deploy {
         $logger->tracef("download %s to '%s'", $resource, $to);
         $self->{resource_manager}->download($resource, to => $to);
     }
+    $logger->debug("deploy complete");
 
-    $self->_push_to_destination($to_dir) unless ($is_local);
+    $self->_push_to_destination($to_dir, $options{status}) unless ($is_local);
 }
 
 sub _init {
@@ -153,14 +154,14 @@ sub _init {
 }
 
 sub _push_to_destination {
-    my ($self, $temp_dir) = @_;
+    my ($self, $temp_dir, $status) = @_;
 
     $self->{command_runner}->run_or_die(
         cp_command(
             $temp_dir, 
             $self->{spec}{configuration}{to_dir}, 
             $self->_command_options(),
-            'status' => 1));
+            'status' => $status));
 }
 
 sub _temp_dir {

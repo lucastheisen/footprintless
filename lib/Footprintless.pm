@@ -137,6 +137,20 @@ sub localhost {
     return $self->{localhost};
 }
 
+sub log {
+    my ($self, $coordinate, %options) = @_;
+
+    require Footprintless::Log;
+    return Footprintless::Log->new(
+        $self->{entities}, $coordinate,
+        command_options_factory => $options{command_options_factory} 
+            || $self->command_options_factory(),
+        command_runner => $options{command_runner} 
+            || $self->command_runner(),
+        localhost => $options{localhost} 
+            || $self->localhost());
+}
+
 sub overlay {
     my ($self, $coordinate, %options) = @_;
 
