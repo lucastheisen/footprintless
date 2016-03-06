@@ -14,7 +14,7 @@ use Footprintless::Command qw(
     tail_command
     write_command
 );
-use Test::More tests => 43;
+use Test::More tests => 44;
 
 BEGIN {use_ok('Footprintless::Command')}
 
@@ -132,6 +132,7 @@ is(rm_command('/foo', '/bar/', 'baz', 'foz/'), 'bash -c "rm -rf \\"/bar/\\" \\"f
 
 is( sed_command('s/foo/bar/'), 'sed -e \'s/foo/bar/\'', 'simple sed' );
 
+is(tail_command('access_log', lines => 10), 'tail -n 10 access_log', 'tail 10 lines access_log');
 is(tail_command('access_log', follow => 1), 'tail -f access_log', 'tail access_log');
 is(tail_command('access_log', follow => 1, command_options(sudo_username => 'apache')),
     'sudo -u apache tail -f access_log', 

@@ -8,6 +8,7 @@ our @EXPORT_OK = qw(
     agent
     default_command_runner
     dumper
+    exit_due_to
     slurp
     spurt
 );
@@ -29,6 +30,19 @@ sub dumper {
     my $dumper = Data::Dumper->new(\@_);
     $dumper->Indent(1);
     return $dumper->Dump(@_);
+}
+
+sub exit_due_to {
+    my ($dollar_at) = @_;
+    if (ref($dollar_at) 
+        && $dollar_at->isa(
+            'Footprintless::CommandRunner::Exception')) {
+        $@->exit();
+    }
+    else {
+        print(STDERR "$@");
+        exit 255;
+    }
 }
 
 sub slurp {

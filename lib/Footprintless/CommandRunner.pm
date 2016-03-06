@@ -4,6 +4,7 @@ use warnings;
 package Footprintless::CommandRunner;
 
 use Carp;
+use Footprintless::CommandRunner::Exception;
 use Log::Any;
 
 my $logger = Log::Any->get_logger();
@@ -60,9 +61,11 @@ sub run_or_die {
     my ($self, $command, @runner_options) = @_;
     my $exit_code = $self->run($command, @runner_options);
     if ($exit_code) {
-        croak("$exit_code: " . ($self->{last_call}{exception}
-            ? $self->{last_call}{exception}
-            : ''));
+        die(Footprintless::CommandRunner::Exception->new(
+            $command,
+            $exit_code, 
+            $self->{last_call}{exception},
+            $self->{last_call}{stderr}));
     }
     return $self->{last_call}{stdout};
 }

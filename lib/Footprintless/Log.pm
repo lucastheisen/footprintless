@@ -5,6 +5,7 @@ package Footprintless::Log;
 
 use Carp;
 use Footprintless::Command qw(
+    command
     tail_command
 );
 use Footprintless::CommandOptionsFactory;
@@ -15,6 +16,14 @@ my $logger = Log::Any->get_logger();
 
 sub new {
     return bless({}, shift)->_init(@_);
+}
+
+sub cat {
+    my ($self, %options) = @_;
+    my $log_file = $self->{spec};
+
+    return $self->{command_runner}->run_or_die(
+        command("cat $log_file", $self->{command_options}));
 }
 
 sub follow {
@@ -30,6 +39,22 @@ sub follow {
         my $exception = $self->{command_runner}->get_exception();
         croak ($@) unless ($exception && $exception =~ /^until found .*$/) 
     }
+}
+
+sub grep {
+    my ($self, %options) = @_;
+    my $log_file = $self->{spec};
+
+    return $self->{command_runner}->run_or_die(
+        command("grep $options{pattern} $log_file", $self->{command_options}));
+}
+
+sub head {
+    my ($self, %options) = @_;
+    my $log_file = $self->{spec};
+
+    return $self->{command_runner}->run_or_die(
+        command("head -n $options{lines} $log_file", $self->{command_options}));
 }
 
 sub _init {
@@ -57,7 +82,6 @@ sub _init {
         ->command_options(%{
             $entity->fill($coordinate,
                 {
-                    ssh => 'ssh -q -t',
                     hostname => undef,
                     username => undef,
                     sudo_username => undef
@@ -110,6 +134,14 @@ sub _runner_options {
     }
 
     return $options;
+}
+
+sub tail {
+    my ($self, %options) = @_;
+    my $log_file = $self->{spec};
+
+    return $self->{command_runner}->run_or_die(
+        tail_command($log_file, lines => $options{lines}, $self->{command_options}));
 }
 
 1;

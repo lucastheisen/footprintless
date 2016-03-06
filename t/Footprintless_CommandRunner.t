@@ -38,7 +38,7 @@ foreach my $command_runner (
         message($command_runner, 'echo hello'));
 
     eval {$command_runner->run_or_die('perl -e "print STDERR \"foo\";exit 42"')};
-    like($@, qr/^42:/, message($command_runner, 'expected to die'));
+    is($@->get_exit_code(), 42, message($command_runner, 'expected to die'));
 
     eval {
         my $out = $command_runner->run_or_die('perl -e "print \"bar\";exit 0"');

@@ -4,6 +4,7 @@ use warnings;
 package Footprintless::App::Command::log;
 
 use Footprintless::App -command;
+use Footprintless::Util qw(exit_due_to);
 
 sub abstract {
     return 'provides access to log files';
@@ -18,33 +19,42 @@ sub execute {
     my $log = $self->app()->footprintless()->log($args->[0]);
 
     if ($opts->{follow}) {
-        my $err = '';
         eval {
-            $log->follow(runner_options => {out_handle => \*STDOUT, err_buffer => \$err});
+            $log->follow(runner_options => {out_handle => \*STDOUT});
         };
-        if ($@) {
-            print(STDERR "$@: $err");
-        }
+        exit_due_to($@) if ($@);
     }
     elsif ($opts->{tail}) {
-        croak("tail not yet implemented");
+        eval {
+            $log->tail(lines => $opts->{tail});
+        };
+        exit_due_to($@) if ($@);
     }
     elsif ($opts->{head}) {
-        croak("head not yet implemented");
+        eval {
+            $log->head(lines => $opts->{head});
+        };
+        exit_due_to($@) if ($@);
     }
     elsif ($opts->{cat}) {
-        croak("cat not yet implemented");
+        eval {
+            $log->cat();
+        };
+        exit_due_to($@) if ($@);
     }
     elsif ($opts->{grep}) {
-        croak("grep not yet implemented");
+        eval {
+            $log->grep(pattern => $opts->{grep});
+        };
+        exit_due_to($@) if ($@);
     }
 }
 
 sub opt_spec {
     return (
-        [ "cat=i",  "prints out the file", ],
+        [ "cat",  "prints out the file", ],
         [ "follow",  "follows the log file (tail -f)", ],
-        [ "grep=s",  "searches the file using grep", ],
+        [ "grep=s",  "prints out lines matching the pattern", ],
         [ "head=i",  "prints out n lines from the beginning of the file", ],
         [ "tail=i",  "prints out n lines from the end of the file", ],
     );

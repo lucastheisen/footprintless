@@ -254,6 +254,9 @@ sub tail_command {
             if ($options{follow}) {
                 push(@command, '-f');
             }
+            elsif ($options{lines}) {
+                push(@command, '-n', $options{lines});
+            }
             push(@command, $file);
             return join(' ', @command);
         }
