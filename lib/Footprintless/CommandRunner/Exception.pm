@@ -3,6 +3,7 @@ use warnings;
 
 package Footprintless::CommandRunner::Exception;
 
+use Term::ANSIColor;
 use overload '""' => 'to_string';
 
 sub new {
@@ -22,8 +23,9 @@ sub _init {
 }
 
 sub exit {
-    my ($self) = shift;
-    print(STDERR "[$self->{command}] failed\n$self");
+    my ($self, $verbose) = shift;
+    print(STDERR colored(['red'], "[$self->{command}]"), " failed ($self->{exit_code})\n");
+    print(STDERR $self) if ($verbose);
     exit $self->{exit_code};
 }
 
