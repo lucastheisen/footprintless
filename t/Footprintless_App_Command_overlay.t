@@ -92,7 +92,7 @@ sub match {
 }
 
 sub test_overlay {
-    my ($action, $coordinate, %options) = @_;
+    my ($coordinate, $action, %options) = @_;
 
     my $temp_dir = File::Temp->newdir();
     my $overlay_dir = File::Spec->catdir($temp_dir, 'overlay');
@@ -124,7 +124,7 @@ sub test_overlay {
     }
     is($overlay->{to_dir}, $to_dir, 'modified to dir');
 
-    my $result = test_app('Footprintless::App' => [$action, $coordinate, 
+    my $result = test_app('Footprintless::App' => ['overlay', $coordinate, $action,
             ($options{command_args} ? @{$options{command_args}} : ())]);
     if ($logger->is_debug()) {
         $logger->debugf("exit_code=[%s],error=[%s]\n----- STDOUT ----\n%s\n---- STDERR ----\n%s\n---- END ----", 
@@ -134,7 +134,7 @@ sub test_overlay {
     &{$options{validator}}($to_dir) if ($options{validator});
 }
 
-test_overlay('overlay', 'dev.foo.overlay', 
+test_overlay('dev.foo.overlay', undef,
     validator => sub {
         my ($to_dir) = @_;
         my $to_bin_dir = File::Spec->catdir($to_dir, 'bin');
@@ -146,8 +146,7 @@ test_overlay('overlay', 'dev.foo.overlay',
         match('server.xml', $to_conf_dir, $expected_conf_dir);
     });
 
-test_overlay('overlay', 'dev.foo.overlay', 
-    command_args => ['--initialize'], 
+test_overlay('dev.foo.overlay', 'initialize',
     validator => sub {
         my ($to_dir) = @_;
         my $to_bin_dir = File::Spec->catdir($to_dir, 'bin');

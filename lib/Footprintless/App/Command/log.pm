@@ -3,48 +3,45 @@ use warnings;
 
 package Footprintless::App::Command::log;
 
+# ABSTRACT: Provides access to log files.
+# PODNAME: Footprintless::App::Command::log
+
 use Footprintless::App -command;
 use Footprintless::Util qw(exit_due_to);
 
-sub abstract {
-    return 'provides access to log files';
-}
-
-sub description {
-    return 'provides access to log files';
-}
-
 sub execute {
     my ($self, $opts, $args) = @_;
-    my $log = $self->app()->footprintless()->log($args->[0]);
+    my ($coordinate, $action, @action_args) = @$args;
 
-    if ($opts->{follow}) {
+    if ($action eq 'follow') {
         eval {
-            $log->follow(runner_options => {out_handle => \*STDOUT});
+            $self->{log}->follow(
+                ($opts->{until} ? (until => $opts->{until}) : ()),
+                runner_options => {out_handle => \*STDOUT});
         };
         exit_due_to($@) if ($@);
     }
-    elsif ($opts->{tail}) {
+    elsif ($action eq 'tail') {
         eval {
-            $log->tail(lines => $opts->{tail});
+            $self->{log}->tail(@action_args);
         };
         exit_due_to($@) if ($@);
     }
-    elsif ($opts->{head}) {
+    elsif ($action eq 'head') {
         eval {
-            $log->head(lines => $opts->{head});
+            $self->{log}->head(@action_args);
         };
         exit_due_to($@) if ($@);
     }
-    elsif ($opts->{cat}) {
+    elsif ($action eq 'cat') {
         eval {
-            $log->cat();
+            $self->{log}->cat(@action_args);
         };
         exit_due_to($@) if ($@);
     }
-    elsif ($opts->{grep}) {
+    elsif ($action eq 'grep') {
         eval {
-            $log->grep(pattern => $opts->{grep});
+            $self->{log}->grep(@action_args);
         };
         exit_due_to($@) if ($@);
     }
@@ -52,11 +49,7 @@ sub execute {
 
 sub opt_spec {
     return (
-        [ "cat",  "prints out the file", ],
-        [ "follow",  "follows the log file (tail -f)", ],
-        [ "grep=s",  "prints out lines matching the pattern", ],
-        [ "head=i",  "prints out n lines from the beginning of the file", ],
-        [ "tail=i",  "prints out n lines from the end of the file", ],
+        ["until=s", "a perl regex pattern indicating the follow should stop",],
     );
 }
 
@@ -65,9 +58,40 @@ sub usage_desc {
 }
 
 sub validate_args {
-    my ($self, $opt, $args) = @_;
+    my ($self, $opts, $args) = @_;
+    my ($coordinate, $action) = @$args;
 
     $self->usage_error("coordinate is required") unless @$args;
+
+    my $footprintless = $self->app()->footprintless();
+    eval {
+        $self->{log} = $footprintless->log($args->[0]);
+    };
+    $self->usage_error("invalid coordinate [$coordinate]: $@") if ($@);
+
+    $self->usage_error("invalid action [$action]") 
+        unless ($action =~ /^cat|follow|grep|head|tail$/);
 }
 
 1;
+
+__END__
+
+=head1 SYNOPSIS
+
+  fpl overlay project.environment.component.overlay clean
+  fpl overlay project.environment.component.overlay initialize
+  fpl overlay project.environment.component.overlay update
+  fpl overlay project.environment.component.overlay # same as update
+
+=head1 DESCRIPTION
+
+Performs actions on an overlay.  The available actions are:
+
+    clean        removes all files/folders handled by this overlay
+    initialize   clean, then combine the base files and the processed template
+                 files, then deploy
+    update       process the template files, then deploy
+
+If no action is specified, C<update> is implied.  For detailed configuration 
+see L<Footprintless::Log>. 

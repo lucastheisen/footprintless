@@ -7,6 +7,7 @@ use Config::Entities;
 use File::Basename;
 use File::Spec;
 use File::Temp;
+use Footprintless::CommandRunner::Mock;
 use Footprintless::Localhost;
 use Footprintless::Util qw(
     default_command_runner 
@@ -15,7 +16,7 @@ use Footprintless::Util qw(
     spurt
 );
 use IO::Handle;
-use Test::More tests => 2;
+use Test::More tests => 14;
 use Time::HiRes qw(usleep);
 
 BEGIN {use_ok('Footprintless::Log')}
@@ -72,4 +73,70 @@ my $test_dir = dirname(File::Spec->rel2abs($0));
     is_deeply(\@out, \@expected, 'until');
 }
 
-print("Done\n");
+my $command_runner = Footprintless::CommandRunner::Mock->new(
+    sub { return 0; });
+my $file = '/foo/bar/baz.log';
+{
+    my $log = Footprintless::Log->new(
+        Config::Entities->new({
+            entity => {
+                logs => {
+                    foo => $file
+                }
+            }
+        }),
+        'logs.foo',
+        command_runner => $command_runner);
+    $log->cat();
+    is($command_runner->get_command(), "cat $file", 'cat');
+    $log->cat(options => ['-n 5']);
+    is($command_runner->get_command(), "cat -n 5 $file", 'cat "-n 5"');
+    $log->cat(options => ['-n', '5']);
+    is($command_runner->get_command(), "cat -n 5 $file", 'cat "-n" "5"');
+    $log->grep(options => ["foo"]);
+    is($command_runner->get_command(), "grep foo $file", 'grep');
+    $log->tail();
+    is($command_runner->get_command(), "tail $file", 'tail');
+    $log->head();
+    is($command_runner->get_command(), "head $file", 'head');
+}
+
+{
+    my $log = Footprintless::Log->new(
+        Config::Entities->new({
+            entity => {
+                hostname => 'foo.example.com',
+                logs => {
+                    foo => $file
+                },
+                ssh => 'ssh -t -t -q',
+                sudo_username => 'foouser'
+            }
+        }),
+        'logs.foo',
+        command_runner => $command_runner);
+    $log->cat();
+    is($command_runner->get_command(), 
+        "ssh -t -t -q foo.example.com \"sudo -u foouser cat $file\"", 
+        'cat ssh');
+    $log->cat(options => ['-n 5']);
+    is($command_runner->get_command(),
+        "ssh -t -t -q foo.example.com \"sudo -u foouser cat -n 5 $file\"", 
+        'cat ssh "-n 5"');
+    $log->cat(options => ['-n', '5']);
+    is($command_runner->get_command(), 
+        "ssh -t -t -q foo.example.com \"sudo -u foouser cat -n 5 $file\"", 
+        'cat ssh "-n" "5"');
+    $log->grep(options => ["foo"]);
+    is($command_runner->get_command(), 
+        "ssh -t -t -q foo.example.com \"sudo -u foouser grep foo $file\"", 
+        'grep ssh');
+    $log->tail();
+    is($command_runner->get_command(), 
+        "ssh -t -t -q foo.example.com \"sudo -u foouser tail $file\"", 
+        'tail ssh');
+    $log->head();
+    is($command_runner->get_command(), 
+        "ssh -t -t -q foo.example.com \"sudo -u foouser head $file\"", 
+        'head ssh');
+}

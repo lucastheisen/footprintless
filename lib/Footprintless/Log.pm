@@ -22,8 +22,12 @@ sub cat {
     my ($self, %options) = @_;
     my $log_file = $self->{spec};
 
+    my $action_options = scalar($options{options}) 
+        ? join(' ', @{$options{options}}, '') 
+        : '';
+
     return $self->{command_runner}->run_or_die(
-        command("cat $log_file", $self->{command_options}));
+        command("cat $action_options$log_file", $self->{command_options}));
 }
 
 sub follow {
@@ -45,16 +49,24 @@ sub grep {
     my ($self, %options) = @_;
     my $log_file = $self->{spec};
 
+    my $action_options = scalar($options{options}) 
+        ? join(' ', @{$options{options}}, '') 
+        : '';
+
     return $self->{command_runner}->run_or_die(
-        command("grep $options{pattern} $log_file", $self->{command_options}));
+        command("grep $action_options$log_file", $self->{command_options}));
 }
 
 sub head {
     my ($self, %options) = @_;
     my $log_file = $self->{spec};
 
+    my $action_options = scalar($options{options}) 
+        ? join(' ', @{$options{options}}, '') 
+        : '';
+
     return $self->{command_runner}->run_or_die(
-        command("head -n $options{lines} $log_file", $self->{command_options}));
+        command("head $action_options$log_file", $self->{command_options}));
 }
 
 sub _init {
@@ -84,6 +96,8 @@ sub _init {
                 {
                     hostname => undef,
                     username => undef,
+                    ssh => undef,
+                    ssh_username => undef,
                     sudo_username => undef
                 },
                 ancestry => 1)
@@ -140,8 +154,12 @@ sub tail {
     my ($self, %options) = @_;
     my $log_file = $self->{spec};
 
+    my $action_options = scalar($options{options}) 
+        ? join(' ', @{$options{options}}, '') 
+        : '';
+
     return $self->{command_runner}->run_or_die(
-        tail_command($log_file, lines => $options{lines}, $self->{command_options}));
+        command("tail $action_options$log_file", $self->{command_options}));
 }
 
 1;
