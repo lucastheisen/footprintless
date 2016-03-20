@@ -96,7 +96,7 @@ SKIP: {
             {timeout => 2});
     };
     if ($@) {
-        skip("cannot ssh to localhost: $@", 3);
+        skip("cannot ssh to localhost: $@", 6);
     }
 
     my ($temp_dir, $to_dir) = temp_dirs();

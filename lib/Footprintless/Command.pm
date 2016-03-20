@@ -152,6 +152,7 @@ sub pipe_command {
 sub _quote_command {
     my ($command) = @_;
     $command =~ s/\\/\\\\/g;
+    $command =~ s/\$/\\\$/g;
     $command =~ s/`/\\`/g; # for `command`
     $command =~ s/"/\\"/g;
     return "\"$command\"";

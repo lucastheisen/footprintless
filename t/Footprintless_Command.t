@@ -14,7 +14,7 @@ use Footprintless::Command qw(
     tail_command
     write_command
 );
-use Test::More tests => 44;
+use Test::More tests => 45;
 
 BEGIN {use_ok('Footprintless::Command')}
 
@@ -55,6 +55,25 @@ is( batch_command( "echo abc;", "echo def;" ),
 is( batch_command( "echo abc;", "echo def;", {subshell => 'bash -c '} ),
     'bash -c "echo abc;echo def"',
     'batch subshell' );
+is( 
+    command ( 
+        batch_command( 
+            "pid=\$(cat /var/run/bard/bard.pid)",
+            "kill -0 \$pid",
+            "if [[ \$? ]]",
+            "then printf 'bard (pid \%s) is running...' \"\$pid\"",
+            "else printf 'bard is stopped...'",
+            "fi",
+            {subshell => 'bash -c '},
+        ),
+        command_options(
+            ssh => 'ssh -q -t',
+            hostname => 'foo', 
+            sudo_username => 'bar'
+        )
+    ),
+    'ssh -q -t foo "sudo -u bar bash -c \\"pid=\\\\\\$(cat /var/run/bard/bard.pid);kill -0 \\\\\\$pid;if [[ \\\\\\$? ]];then printf \'bard (pid %s) is running...\' \\\\\\"\\\\\\$pid\\\\\\";else printf \'bard is stopped...\';fi\""',
+    'batch subshell status' );
 
 is( command('echo'), 'echo', 'command' );
 is( command( 'echo', command_options( hostname => 'foo' ) ), 'ssh foo "echo"', 'remote command' );

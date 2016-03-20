@@ -66,6 +66,10 @@ return {
             jmx_port => 8587,
             jpda_port => 8586,
             service => {
+                action => {
+                    'kill' => { command_args => 'stop -force' },
+                    'status' => { use_pid => 1 }
+                },
                 command => "$foo_tomcat_directory/bin/catalina.sh",
                 pid_file => "/var/run/foo/catalina.pid",
             },

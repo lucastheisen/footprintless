@@ -185,6 +185,19 @@ sub resource_manager {
     return $self->{resource_manager};
 }
 
+sub service {
+    my ($self, $coordinate, %options) = @_;
+
+    require Footprintless::Service;
+    return Footprintless::Service->new($self->{entities}, $coordinate,
+        command_options_factory => $options{command_options_factory} 
+            || $self->command_options_factory(),
+        command_runner => $options{command_runner} 
+            || $self->command_runner(),
+        localhost => $options{localhost} 
+            || $self->localhost());
+}
+
 sub _split_dirs {
     my ($dirs_string) = @_;
 

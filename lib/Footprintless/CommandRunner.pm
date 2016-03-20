@@ -18,6 +18,10 @@ sub _init {
     return $self;
 }
 
+sub get_command {
+    return $_[0]->{last_call}{command};
+}
+
 sub get_exception {
     return $_[0]->{last_call}{exception};
 }
@@ -41,7 +45,7 @@ sub _run {
 sub run {
     my ($self, $command, @runner_options) = @_;
 
-    $self->{last_call} = {};
+    $self->{last_call} = {command => $command};
 
     $logger->debugf('running [%s]', $command);
     $logger->tracef('with options %s', \@runner_options);
