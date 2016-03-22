@@ -136,6 +136,17 @@ sub _runner_options {
             };
         }
     }
+    else {
+        if (exists($runner_options->{out_buffer})) {
+            $options->{out_buffer} = $runner_options->{out_buffer};
+        }
+        elsif (exists($runner_options->{out_callback})) {
+            $options->{out_callback} = $runner_options->{out_callback};
+        }
+        elsif (exists($runner_options->{out_handle})) {
+            $options->{out_handle} = $runner_options->{out_handle};
+        }
+    }
 
     if (exists($runner_options->{err_buffer})) {
         $options->{err_buffer} = $runner_options->{err_buffer};

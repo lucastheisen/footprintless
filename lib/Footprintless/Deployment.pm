@@ -42,7 +42,7 @@ sub clean {
     }
 
     if (@clean) {
-        $logger->debugf("cleaning overlay %s", \@clean);
+        $logger->debugf("cleaning deployment %s", \@clean);
         eval {
             $self->{command_runner}->run_or_die(
                 batch_command(
@@ -60,19 +60,6 @@ sub clean {
 sub _command_options {
     my ($self) = @_;
     return $self->{command_options_factory}->command_options(%{$self->{spec}});
-}
-
-sub _rebase {
-    my ($self, $path, $rebase) = @_;
-    my $rebased;
-    if ($path =~ /^$rebase->{from}(.*)$/) {
-        $rebased = "$rebase->{to}$1";
-    }
-    else {
-        croak("invalid rebase $path from $rebase->{from} to $rebase->{to}");
-    }
-
-    return $rebased;
 }
 
 sub deploy {
@@ -162,6 +149,19 @@ sub _push_to_destination {
             $self->{spec}{configuration}{to_dir}, 
             $self->_command_options(),
             'status' => $status));
+}
+
+sub _rebase {
+    my ($self, $path, $rebase) = @_;
+    my $rebased;
+    if ($path =~ /^$rebase->{from}(.*)$/) {
+        $rebased = "$rebase->{to}$1";
+    }
+    else {
+        croak("invalid rebase $path from $rebase->{from} to $rebase->{to}");
+    }
+
+    return $rebased;
 }
 
 sub _temp_dir {

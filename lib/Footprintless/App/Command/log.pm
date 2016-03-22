@@ -9,9 +9,22 @@ package Footprintless::App::Command::log;
 use Footprintless::App -command;
 use Footprintless::Util qw(exit_due_to);
 
+my $logger = Log::Any->get_logger();
+
+sub _configure_logging {
+    my ($self, $level) = @_;
+    require Log::Any::Adapter;
+    Log::Any::Adapter->set('Stderr', 
+        log_level => Log::Any::Adapter::Util::numeric_level($level));
+}
+
 sub execute {
     my ($self, $opts, $args) = @_;
     my ($coordinate, $action, @action_args) = @$args;
+
+    if ($opts->{log}) {
+        $self->_configure_logging($opts->{log});
+    }
 
     if ($action eq 'follow') {
         eval {
@@ -49,6 +62,7 @@ sub execute {
 
 sub opt_spec {
     return (
+        ["log=s", "will set the log level",],
         ["until=s", "a perl regex pattern indicating the follow should stop",],
     );
 }

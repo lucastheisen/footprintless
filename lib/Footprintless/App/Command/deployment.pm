@@ -1,10 +1,10 @@
 use strict;
 use warnings;
 
-package Footprintless::App::Command::overlay;
+package Footprintless::App::Command::deployment;
 
-# ABSTRACT: Performs an action on an overlay.
-# PODNAME: Footprintless::App::Command::overlay
+# ABSTRACT: Performs an action on a deployment.
+# PODNAME: Footprintless::App::Command::deployment
 
 use Carp;
 use Footprintless::App -command;
@@ -30,15 +30,15 @@ sub execute {
 
     if ($self->{action} eq 'clean') {
         $logger->info('Performing clean...');
-        $self->{overlay}->clean();
+        $self->{deployment}->clean();
     }
-    elsif ($self->{action} eq 'initialize') {
-        $logger->info('Performing initialize...');
-        $self->{overlay}->initialize();
-    }
-    elsif ($self->{action} eq 'update') {
-        $logger->info('Performing update...');
-        $self->{overlay}->update();
+    elsif ($self->{action} eq 'deploy') {
+        if ($opts->{clean}) {
+            $logger->info('Performing clean...');
+            $self->{deployment}->clean();
+        }
+        $logger->info('Performing deploy...');
+        $self->{deployment}->deploy();
     }
     else {
         croak("whoops, validation is broken, fix it");
@@ -49,6 +49,7 @@ sub execute {
 
 sub opt_spec {
     return (
+        ["clean", "will cause clean to be run before deploy",],
         ["log=s", "will set the log level",],
     );
 }
@@ -65,13 +66,13 @@ sub validate_args {
 
     my $footprintless = $self->app()->footprintless();
     eval {
-        $self->{overlay} = $self->app()->footprintless()->overlay($coordinate);
+        $self->{deployment} = $self->app()->footprintless()->deployment($coordinate);
     };
     $self->usage_error("invalid coordinate [$coordinate]: $@") if ($@);
 
-    $self->{action} = $action || 'update';
-    $self->usage_error("invalid action [$action], must be one of clean, initialize, update")
-        unless ($self->{action} =~ /^clean|initialize|update$/);
+    $self->{action} = $action || 'deploy';
+    $self->usage_error("invalid action [$action], must be one of clean, deploy")
+        unless ($self->{action} =~ /^clean|deploy$/);
 }
 
 1;
