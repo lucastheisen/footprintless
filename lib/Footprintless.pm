@@ -219,30 +219,203 @@ __END__
 
   use Footprintless;
 
+  my $footprintless = Footprintless->new();
+
+  $footprintless->overlay('dev.foo.overlay')->initialize();
+  $footprintless->service('dev.foo.service')->start();
+
 =head1 DESCRIPTION
 
-This module ...
+This module is used to initialize the configuration and provide a factory
+for some of the core modules.
 
 =constructor new(\%entity, %options)
 
-Creates a new Footprintless agent.  Available options are:
+Creates a new Footprintless factory.  Available options are:
 
 =over 4
 
-=item resolver
+=item entities
 
-A preconfigured instance of Template::Resolver.  If not supplied, one
-will be created with default configuration. 
+If supplied, C<entities> will serve as the configuration for this instance.
+
+=item fpl_home
+
+The root folder for footprintless configuration.  Defaults to the
+C<$FPL_HOME> environment variable if set, C<~/.footprintless> if not.
+
+=item config_dirs
+
+The root folder(s) for configuration entities.  Defaults to the 
+C<$FPL_CONFIG_DIRS> environment variable if set, C<$FPL_HOME/config> if not.
+C<config_dirs> can be a scalar (one directory), or an array ref if there
+is more than one directory.  If set via the C<$FPL_CONFIG_DIRS> environment
+variable, and you need more than one directory, use a C<;> to delimit on
+windows, or a C<:> to delimit on *nix (same as the C<$PATH> variable).
+
+=item config_properties
+
+The properties file(s) used for placeholder replacement for configuration 
+entities.  Defaults to the C<$FPL_CONFIG_PROPS> environment variable if set, 
+C<$FPL_HOME/properties.pl> if not.  C<config_properties> can be a scalar 
+(one file), or an array ref if there is more than one directory.  If set via 
+the C<$FPL_CONFIG_PROPS> environment variable, and you need more than one 
+directory, use a C<;> to delimit on windows, or a C<:> to delimit on *nix 
+(same as the C<$PATH> variable).
+
+=item command_runner
+
+Sets the C<command_runner> for this instance.  Must be an a subclass of
+C<Footprintless::CommandRunner>.
+
+=item localhost
+
+Sets the C<localhost> resolver for this instance.  Must be an instance
+or subclass of C<Footprintless::Localhost>.
+
+=item command_options_factory
+
+Sets the C<command_options_factory> for this instance.  Must be an instance
+or subclass of C<Footprintless::CommandOptionsFactory>.
 
 =back
 
-=method update($entity)
+=method agent()
 
-Will read from C<$file_handle_or_name> replacing all placeholders prefixed by 
-C<$placeholder_prefix>.
+Returns the C<agent> used by this instance.  Will be an instance of 
+C<LWP::UserAgent>.
+
+=method command_options_factory()
+
+Returns the C<command_options_factory> used by this instance.
+
+=method command_runner()
+
+Returns the C<command_runner> used by this instance.
+
+=method deployment($coordinate, %options)
+
+Returns a new instance of C<Footprintless::Deployment> preconfigured to
+operate on the deployment at C<$coordinate>.  Supported options are
+
+=over 4
+
+=item command_options_factory
+
+A C<command_options_factory> to use instead of that which is supplied by
+this footprintless instance.
+
+=item command_runner
+
+A C<command_runner> to use instead of that which is supplied by
+this footprintless instance.
+
+=item localhost
+
+A C<localhost> to use instead of that which is supplied by
+this footprintless instance.
+
+=item resource_manager
+
+A C<resource_manager> to use instead of that which is supplied by
+this footprintless instance.
+
+=back
+
+=method entities()
+
+Returns the C<Config::Entities> that were resolved by this footprintless
+instance.
+
+=method localhost()
+
+Returns the C<localhost> resolver used by this instance.
+
+=method log($coordinate, %options)
+
+Returns a new instance of C<Footprintless::Log> preconfigured to
+operate on the log at C<$coordinate>.  Supported options are
+
+=over 4
+
+=item command_options_factory
+
+A C<command_options_factory> to use instead of that which is supplied by
+this footprintless instance.
+
+=item command_runner
+
+A C<command_runner> to use instead of that which is supplied by
+this footprintless instance.
+
+=item localhost
+
+A C<localhost> to use instead of that which is supplied by
+this footprintless instance.
+
+=back
+
+=method overlay($coordinate, %options)
+
+Returns a new instance of C<Footprintless::Overlay> preconfigured to
+operate on the overlay at C<$coordinate>.  Supported options are
+
+=over 4
+
+=item command_options_factory
+
+A C<command_options_factory> to use instead of that which is supplied by
+this footprintless instance.
+
+=item command_runner
+
+A C<command_runner> to use instead of that which is supplied by
+this footprintless instance.
+
+=item localhost
+
+A C<localhost> to use instead of that which is supplied by
+this footprintless instance.
+
+=item resource_manager
+
+A C<resource_manager> to use instead of that which is supplied by
+this footprintless instance.
+
+=back
+
+=method resource_manager()
+
+Returns the C<resource_manager> used by this instance.
+
+=method service($coordinate, %options)
+
+Returns a new instance of C<Footprintless::Service> preconfigured to
+operate on the service at C<$coordinate>.  Supported options are
+
+=over 4
+
+=item command_options_factory
+
+A C<command_options_factory> to use instead of that which is supplied by
+this footprintless instance.
+
+=item command_runner
+
+A C<command_runner> to use instead of that which is supplied by
+this footprintless instance.
+
+=item localhost
+
+A C<localhost> to use instead of that which is supplied by
+this footprintless instance.
+
+=back
 
 =head1 SEE ALSO
-Config::Entities
-Template::Resolver
+Footprintless::Deployment
+Footprintless::Log
+Footprintless::Overlay
+Footprintless::Service
 https://github.com/lucastheisen/footprintless
 
