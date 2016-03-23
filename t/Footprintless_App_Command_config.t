@@ -32,7 +32,9 @@ $logger->trace("All logging sent to stderr to avoid conflict with output");
 my $test_dir = dirname( File::Spec->rel2abs( $0 ) );
 
 $ENV{FPL_CONFIG_DIRS} = File::Spec->catdir($test_dir, 'config', 'entities');
-$ENV{FPL_CONFIG_PROPS} = File::Spec->catfile($test_dir, 'config', 'credentials.pl');
+$ENV{FPL_CONFIG_PROPS} = File::Spec->catfile($test_dir, 'config', 'properties.pl')
+    . (($^O eq 'MSWin32') ? ';' : ':')
+    . File::Spec->catfile($test_dir, 'config', 'environment.pl');
 
 is(test_app('Footprintless::App' => 
     [

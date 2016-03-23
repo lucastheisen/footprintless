@@ -34,7 +34,7 @@ Will read from `$file_handle_or_name` replacing all placeholders prefixed by
 
 # AUTHOR
 
-Lucas Theisen &lt;lucastheisen@pastdev.com>
+Lucas Theisen <lucastheisen@pastdev.com>
 
 # COPYRIGHT AND LICENSE
 
