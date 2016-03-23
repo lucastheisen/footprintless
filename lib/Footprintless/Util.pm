@@ -3,7 +3,9 @@ use warnings;
 
 package Footprintless::Util;
 
+use Carp;
 use Exporter qw(import);
+
 our @EXPORT_OK = qw(
     agent
     default_command_runner

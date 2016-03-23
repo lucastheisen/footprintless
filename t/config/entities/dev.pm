@@ -1,5 +1,4 @@
-my $root_dir = '/opt/pastdev';
-my $app_hostname = 'app.pastdev.local';
+my $root_dir = $properties->{'dev.root.dir'};
 my $trusted_hostname = 'trusted.pastdev.com';
 my $trusted_internal_hostname = 'trusted.pastdev.local';
 my $web_hostname = 'web.pastdev.com';
@@ -9,7 +8,7 @@ my $foo_tomcat_directory = "$root_dir/foo-tomcat";
 
 return {
     base_tomcat => {
-        hostname => $app_hostname,
+        hostname => $properties->{'dev.foo.hostname'},
         catalina_base => "$root_dir/apache-tomcat"
     },
     foo => {
@@ -37,7 +36,7 @@ return {
                 baz => "$properties{'dev.foo.deployment.resources.dir'}/baz.war"
             }
         },
-        hostname => $app_hostname,
+        hostname => $properties->{'dev.foo.hostname'},
         logs => {
             catalina => "$foo_tomcat_directory/logs/catalina.out", 
         },
@@ -45,15 +44,15 @@ return {
             'Config::Entities::inherit' => ['hostname', 'sudo_username'],
             base_dir => "$properties{'dev.foo.overlay.dir'}/base",
             clean => [
-                $foo_tomcat_directory
+                "$foo_tomcat_directory/"
             ],
             key => 'T',
-            os => 'linux',
+            os => $properties{'dev.os'},
             resolver_coordinate => $coord,
             template_dir => "$properties{'dev.foo.overlay.dir'}/template",
             to_dir => $foo_tomcat_directory
         },
-        sudo_username => 'foo',
+        sudo_username => $properties->{'dev.foo.sudo_username'},
         tomcat => {
             'Config::Entities::inherit' => ['hostname', 'sudo_username'],
             ajp => {

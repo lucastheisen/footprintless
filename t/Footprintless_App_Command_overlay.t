@@ -33,62 +33,67 @@ my $logger = Log::Any->get_logger();
 $logger->trace("All logging sent to stderr to avoid conflict with output");
 
 my $test_dir = dirname(File::Spec->rel2abs($0));
-my $base_bin_dir = File::Spec->catdir($test_dir, 'data', 'base', 'bin');
-my $base_conf_dir = File::Spec->catdir($test_dir, 'data', 'base', 'conf');
-my $expected_bin_dir = File::Spec->catdir($test_dir, 'data', 'expected', 'bin');
-my $expected_conf_dir = File::Spec->catdir($test_dir, 'data', 'expected', 'conf');
 
 sub footprintless {
-    my ($temp_dir, $overlay_coordinate, $entity_modifier) = @_;
+    my ($temp_dir, $root_dir) = @_;
+
+    my $temp_config_dir = File::Spec->catdir($temp_dir, 'config');
+    make_path($temp_config_dir);
+    my $environment_dot_pl = File::Spec->catdir($temp_config_dir, 'environment.pl');
+    spurt(<<"    EPL", $environment_dot_pl);
+    return {
+        'dev.foo.deployment.resources.dir' => '$test_dir/data/resources',
+        'dev.foo.hostname' => 'localhost',
+        'dev.foo.overlay.dir' => '$test_dir/data',
+        'dev.foo.sudo_username' => undef,
+        'dev.os' => '$^O',
+        'dev.root.dir' => '$root_dir',
+    }
+    EPL
 
     # Get the current entities
     $ENV{FPL_CONFIG_DIRS} = File::Spec->catdir($test_dir, 'config', 'entities');
     $ENV{FPL_CONFIG_PROPS} = File::Spec->catfile($test_dir, 'config', 'properties.pl')
         . (($^O eq 'MSWin32') ? ';' : ':')
-        . File::Spec->catfile($test_dir, 'config', 'environment.pl');
+        . $environment_dot_pl;
 
-    my $footprintless = Footprintless->new();
-    my $overlay = $footprintless->entities()->get_entity($overlay_coordinate);
-    unless ($overlay->{base_dir} eq File::Spec->catfile($test_dir, 'data', 'base')
-        && $overlay->{template_dir} eq File::Spec->catfile($test_dir, 'data', 'template')) {
-        $logger->errorf("%s=[%s]\n%s=[%s]",
-            $overlay->{base_dir}, File::Spec->catfile($test_dir, 'data', 'base'),
-            $overlay->{template_dir}, File::Spec->catfile($test_dir, 'data', 'template'));
-        BAIL_OUT('environment configuration broken, could be dangerous to proceed...')
-    }
-    $logger->debug('environment looks good, proceed...');
-
-    if ($entity_modifier) {
-        # Now set up the test entities
-        $logger->debug('modify entity configuration');
-        my $entities_hashref = $footprintless->entities()->as_hashref();
-        &$entity_modifier($entities_hashref);
-        my $entities_dir = File::Spec->catdir($temp_dir, 'entities');
-        make_path($entities_dir);
-        for my $key (keys(%$entities_hashref)) {
-            my $value = $entities_hashref->{$key};
-            spurt('return '
-                . Data::Dumper->new([$value], [$key])->Indent(1)->Dump(),
-                File::Spec->catfile($entities_dir, "$key.pm"));
-        }
-
-        $ENV{FPL_CONFIG_DIRS} = File::Spec->catdir($entities_dir);
-        delete $ENV{FPL_CONFIG_PROPS};
-
-        $logger->debug('reloading footprintless with modified entities');
-        $footprintless = Footprintless->new();
-    }
-    return $footprintless;
+    return Footprintless->new();
 }
 
 sub match {
-    my ($file_name, $got_dir, $expected_dir) = @_;
-    my $got_file = File::Spec->catfile($got_dir, $file_name);
+    my ($file, $footprintless, $coordinate) = @_;
+
+    my $overlay = $footprintless->entities()->get_entity($coordinate);
+    my $got_file = File::Spec->catdir(
+        File::Spec->catdir($overlay->{to_dir}, $file));
+    ok(-f $got_file, "$file is file");
+
+    my $original_content;
+    my $original_file = File::Spec->catdir(
+        File::Spec->catdir($overlay->{template_dir}, $file));
+    if (-f $original_file) {
+        my @resolver_opts = ();
+        if ($overlay->{os}) {
+            push(@resolver_opts, os => $overlay->{os});
+        }
+        my $resolver_spec = $overlay->{resolver_coordinate}
+            ? $footprintless->entities()->get_entity(
+                $overlay->{resolver_coordinate})
+            : $overlay;
+
+        $original_content = Template::Resolver
+            ->new($resolver_spec, @resolver_opts)
+            ->resolve(
+                content => slurp($original_file),
+                key => $overlay->{key});
+    }
+    else {
+        $original_content = slurp(
+            File::Spec->catdir($overlay->{base_dir}, $file));
+    }
+
     $logger->debugf('checking %s', $got_file);
-    ok(-f $got_file, "$file_name is file");
-    is(slurp($got_file), 
-        slurp(File::Spec->catfile($expected_dir, $file_name)),
-        "$file_name matches expected");
+    is(slurp($got_file), $original_content, "$file matches expected");
 }
 
 sub test_overlay {
@@ -96,65 +101,55 @@ sub test_overlay {
 
     my $temp_dir = File::Temp->newdir();
     my $overlay_dir = File::Spec->catdir($temp_dir, 'overlay');
-    my $to_dir = File::Spec->catdir($overlay_dir, 'to');
-    my $to_bin_dir = File::Spec->catdir($to_dir, 'bin');
-    my $to_conf_dir = File::Spec->catdir($to_dir, 'conf');
-    make_path($to_bin_dir, $to_conf_dir);
-    my $footprintless = footprintless($temp_dir, $coordinate,
-        sub {
-            my ($entities) = @_;
-            my $overlay_entity = $entities;
-            foreach my $part (split(/\./, $coordinate)) {
-                $overlay_entity = $overlay_entity->{$part};
-            }
-
-            # convert to localhost and remove sudo_username to avoid ssh
-            $overlay_entity->{hostname} = 'localhost';
-            delete $overlay_entity->{sudo_username};
-
-            # set to_dir to the temp directory
-            $overlay_entity->{to_dir} = $to_dir;
-
-            &{$options{entity_modifier}}($entities) if ($options{entity_modifier});
-        });
-
+    make_path($overlay_dir);
+    
+    my $footprintless = footprintless($temp_dir, $overlay_dir);
     my $overlay = $footprintless->entities()->get_entity($coordinate);
+
+    unless ($overlay->{base_dir} eq File::Spec->catfile($test_dir, 'data', 'base')
+        && $overlay->{template_dir} eq File::Spec->catfile($test_dir, 'data', 'template')
+        && $overlay->{to_dir} =~ /^$overlay_dir/) {;
+        $logger->errorf("%s=[%s]\n%s=[%s]\n%s starts with [%s]",
+            $overlay->{base_dir}, File::Spec->catfile($test_dir, 'data', 'base'),
+            $overlay->{template_dir}, File::Spec->catfile($test_dir, 'data', 'template'),
+            $overlay->{to_dir}, $overlay_dir);
+        BAIL_OUT('environment configuration broken, could be dangerous to proceed...')
+    }
+    $logger->debug('environment looks good, proceed...');
+
     if ($logger->is_trace) {
         $logger->tracef('overlay: %s', Data::Dumper->new([$overlay])->Indent(1)->Dump());
     }
-    is($overlay->{to_dir}, $to_dir, 'modified to dir');
 
     my $result = test_app('Footprintless::App' => ['overlay', $coordinate, $action,
             ($options{command_args} ? @{$options{command_args}} : ())]);
+    is($result->exit_code(), 0, "overlay completed succesfully");
     if ($logger->is_debug()) {
         $logger->debugf("exit_code=[%s],error=[%s]\n----- STDOUT ----\n%s\n---- STDERR ----\n%s\n---- END ----", 
             $result->exit_code(), $result->error(), $result->stdout(), $result->stderr());
     }
 
-    &{$options{validator}}($to_dir) if ($options{validator});
+    &{$options{validator}}($footprintless) if ($options{validator});
 }
 
-test_overlay('dev.foo.overlay', undef,
+my $coordinate = 'dev.foo.overlay';
+test_overlay($coordinate, undef,
     validator => sub {
-        my ($to_dir) = @_;
-        my $to_bin_dir = File::Spec->catdir($to_dir, 'bin');
-        my $to_conf_dir = File::Spec->catdir($to_dir, 'conf');
+        my ($footprintless) = @_;
 
-        match('catalina.sh', $to_bin_dir, $expected_bin_dir);
-        match('setenv.sh', $to_bin_dir, $expected_bin_dir);
-        match('jndi-resources.xml', $to_conf_dir, $expected_conf_dir);
-        match('server.xml', $to_conf_dir, $expected_conf_dir);
+        match('bin/catalina.sh', $footprintless, $coordinate);
+        match('bin/setenv.sh', $footprintless, $coordinate);
+        match('conf/jndi-resources.xml', $footprintless, $coordinate);
+        match('conf/server.xml', $footprintless, $coordinate);
     });
 
-test_overlay('dev.foo.overlay', 'initialize',
+test_overlay($coordinate, 'initialize',
     validator => sub {
-        my ($to_dir) = @_;
-        my $to_bin_dir = File::Spec->catdir($to_dir, 'bin');
-        my $to_conf_dir = File::Spec->catdir($to_dir, 'conf');
+        my ($footprintless) = @_;
 
-        match('catalina.sh', $to_bin_dir, $expected_bin_dir);
-        match('setenv.sh', $to_bin_dir, $expected_bin_dir);
-        match('jndi-resources.xml', $to_conf_dir, $expected_conf_dir);
-        match('server.xml', $to_conf_dir, $expected_conf_dir);
-        match('catalina.properties', $to_conf_dir, $base_conf_dir);
+        match('bin/catalina.sh', $footprintless, $coordinate);
+        match('bin/setenv.sh', $footprintless, $coordinate);
+        match('conf/jndi-resources.xml', $footprintless, $coordinate);
+        match('conf/server.xml', $footprintless, $coordinate);
+        match('conf/catalina.properties', $footprintless, $coordinate);
     });
