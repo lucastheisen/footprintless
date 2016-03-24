@@ -3,6 +3,9 @@ use warnings;
 
 package Footprintless::Deployment;
 
+# ABSTRACT: A deployment manager
+# PODNAME: Footprintless::Deployment
+
 use Carp;
 use File::Temp;
 use Footprintless::Command qw(
@@ -171,5 +174,163 @@ sub _temp_dir {
     return File::Temp->newdir();
 }
 
-
 1;
+
+__END__
+=head1 SYNOPSIS
+
+    # Standard way of getting a deployment
+    use Footprintless;
+    my $deployment = Footprintless->new()->deployment('deployment');
+
+    # Or using inline configuration
+    use Config::Entities;
+    use Footprintless::Deployment;
+    my $deployment = Footprintless::Deployment->new(
+        Config::Entities->new(
+            entities => {
+                deployment => {
+                    'Config::Entities::inherit' => ['hostname', 'sudo_username'],
+                    configuration => {
+                        clean => [
+                            '/opt/tomcat/webapps/',
+                            '/opt/tomcat/temp/',
+                            '/opt/tomcat/work/'
+                        ],
+                        to_dir => '/opt/tomcat/webapps'
+                    },
+                    resources => {
+                        bar => '/home/me/.m2/repository/com/pastdev/bar/1.2/bar-1.2.war',
+                        baz => {
+                            coordinate => 'com.pastdev:baz:war:1.0',
+                            'as' => 'foo.war',
+                            type => 'maven'
+                        }
+                    }
+                },
+                hostname => 'test.pastdev.com',
+                sudo_username => 'developer'
+            }
+        ),
+        'deployment');
+
+    # Standard deploy procedure
+    $deployment->clean();
+    $deployment->deploy();
+
+    # Deploy to temp instead of the entity configured location
+    my $rebase = {
+        from => '/opt/tomcat', 
+        to => '/tmp/tomcat'
+    };
+    $deployment->clean(rebase => $rebase);
+    $deployment->deploy(rebase => $rebase);
+
+    # Only deploy selected resources
+    $deployment->deploy(names => ['bar']);
+
+=head1 DESCRIPTION
+
+Manages deployments.  A deployment is a set of files and directories that
+are all associated with a single component.  For example, if you are using
+tomcat, a deployment might refer to all of the webapps deployed to the 
+container, and the folders and files that are I<NOT> part of the tomcat
+container itself.  
+
+=constructor new($entity, $coordinate, %options)
+
+Constructs a new deployment configured by C<$entities> at C<$coordinate>.  
+The supported options are:
+
+=over 4
+
+=item agent
+
+If no C<resource_manager> is provided, then this value is used when 
+constructing the default provider(s) for the default resource manager.
+
+=item command_options_factory
+
+The command options factory to use.  Defaults to an instance of
+L<Footprintless::CommandOptionsFactory> using the C<localhost> instance
+of this object.
+
+=item command_runner
+
+The command runner to use.  Defaults to an instance of 
+L<Footprintless::CommandRunner::IPCRun>.
+
+=item localhost
+
+The localhost alias resolver to use.  Defaults to an instance of
+L<Footprintless::Localhost> configured with C<load_all()>.
+
+=item resource_manager
+
+The resource manager to use.  Defaults to an instance of 
+L<Footprintless::ResourceManager> configured to use a 
+L<Footprintless::MavenProvider> if L<Maven::Agent> is available, and a
+L<Footprintless::UrlProvider> in that order.
+
+=back
+
+=method clean(%options)
+
+Cleans the deployment.  Each path in the C<configuration.clean> entity, 
+will be removed from the destination.  If the path ends in a C</>, then 
+after being removed, the directory will be recreated.  The supported 
+options are:
+
+=over 4
+
+=item rebase
+
+A hash containing C<from> and C<to> where the paths for each item in the
+clean entity will have the C<from> portion of their path substituted by 
+C<to>.  For example, if the path is C</foo/bar> and rebase is
+C<{from => '/foo', to => '/baz'}>, then the resulting path would be 
+C</baz/bar>.
+
+=back
+
+=method deploy(%options)
+
+Deploys all the resources listed in the C<resource> entity to the location
+specified in the C<configuration.to_dir> entity. The supported options 
+are:
+
+=over 4
+
+=item names
+
+A list of names of resources that should be deployed.  If this option is
+provided, any names not in this list will be ignored.
+
+=item rebase
+
+A hash containing C<from> and C<to> where the paths for each item in the
+clean entity will have the C<from> portion of their path substituted by 
+C<to>.  For example, if the path is C</foo/bar> and rebase is
+C<{from => '/foo', to => '/baz'}>, then the resulting path would be 
+C</baz/bar>.
+
+=item status
+
+If I<truthy>, then status information will be provided to the command 
+runner.  In order for this information to be useful, the command runner
+should be supplied with the C<{err_buffer => \*STDERR}> runner option
+so that it will, in turn, be written to STDERR.  Also, status is 
+implemented using the C<pv> command which I<MAY NOT> already be installed.
+If it is missing, this option will cause the command itself to fail.
+
+=back
+
+=head1 SEE ALSO
+
+Config::Entities
+Footprintless
+Footprintless::CommandOptionsFactory
+Footprintless::CommandRunner
+Footprintless::Localhost
+Footprintless::ResourceManager
+

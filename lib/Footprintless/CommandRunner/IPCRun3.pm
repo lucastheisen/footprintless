@@ -3,6 +3,9 @@ use warnings;
 
 package Footprintless::CommandRunner::IPCRun3;
 
+# ABSTRACT: An implementation of Footprintless::CommandRunner using IPC::Run3
+# PODNAME: Footprintless::CommandRunner::IPCRun3
+
 use parent qw(Footprintless::CommandRunner);
 
 use Carp;
@@ -28,3 +31,24 @@ sub _run {
 }
 
 1;
+
+__END__
+=head1 DESCRIPTION
+
+An implementation of L<Footprintless::CommandRunner> using C<IPC::Run3>.
+This implementation is B<NOT> complete.  C<IPC::Run3> does not have a 
+timeout feature so it can hang indefinitely.  Also, the callbacks and 
+handles have not yet been implemented.  This I<should> work for simple
+commands that you want command runner to track out and err for.  Use
+L<Footprintless::CommandRunner::IPCRun> instead if you want a full
+featured implementation.
+
+=constructor new()
+
+Constructs a new instance.
+
+=head1 SEE ALSO
+
+Footprintless
+Footprintless::CommandRunner
+Footprintless::CommandRunner::IPCRun

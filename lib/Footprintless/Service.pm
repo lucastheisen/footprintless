@@ -119,19 +119,11 @@ __END__
 
 =head1 SYNOPSIS
 
+    # Standard way of getting a service
     use Footprintless;
+    my $footprintless = Footprintless->new()->service();
 
-    my $footprintless = Footprintless->new();
-    my $service = $footprintless->service();
-
-    $service->stop();
-
-    # Do stuff while service is offline
-    
-    $service->start();
-
-Or
-
+    # Or using inline configuration
     use Footprintless::Service;
     my $service = Footprintless::Service->new(
         Config::Entities->new({
@@ -150,59 +142,66 @@ Or
         }),
         'service');
 
+
+    $service->stop();
+
+    $service->start();
+
+    $service->status();
+
     $service->kill();
 
 =head1 DESCRIPTION
 
-Configuration spec:
-    <service> : service => <service_spec>
+Manages services.  Allows you to start, stop, check the status of, and
+kill services.  Additional actions can be configured as well.
 
-    <service_spec> : {
-        <actions>
-        <command>
-        <hostname>
-        <pid_command>
-        <pid_file>
-        <ssh_username>
-        <sudo_username>
-    }
+=constructor new($entity, $coordinate, %options)
 
-    <actions> : actions => <actions_spec>
+Constructs a new service configured by C<$entities> at C<$coordinate>.  
+The supported options are:
 
-    <actions_spec> : {
-        <action>
-    }
+=over 4
 
-    <action> : <action_name> => <action_spec>
+=item command_options_factory
 
-    <action_name> : '' 
+The command options factory to use.  Defaults to an instance of
+L<Footprintless::CommandOptionsFactory> using the C<localhost> instance
+of this object.
 
-    <action_spec> : {
-        <command>
-        <command_args>
-        <command_name>
-        <use_pid>
-    }
+=item command_runner
 
-    <command> : command => ''
+The command runner to use.  Defaults to an instance of 
+L<Footprintless::CommandRunner::IPCRun>.
 
-    <command_args> : command_args => ''
+=item localhost
 
-    <command_name> : command_name => ''
+The localhost alias resolver to use.  Defaults to an instance of
+L<Footprintless::Localhost> configured with C<load_all()>.
 
-    <use_pid> : use_id => truthy|falsey
+=back
 
-    <hostname> : hostname => ''
+=method execute($action)
 
-    <pid_command> : pid_command => ''
+Executes C<$action> on the service.
 
-    <pid_file> : pid_file => ''
+=method kill()
 
-    <ssh_username> : ssh_username => ''
+Kills the service.
 
-    <sudo_username> : sudo_username => ''
+=method start()
 
-=head1 EXAMPLES
+Starts the service.
+
+=method status()
+
+Prints out the status of the service.
+
+=method stop()
+
+Stops the service.
+
+=head1 SPEC
 
 A simple service (the most common case) can be defined:
 

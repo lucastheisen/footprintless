@@ -3,6 +3,9 @@ use warnings;
 
 package Footprintless::CommandRunner::Exception;
 
+# ABSTRACT: A base exception class for Footprintless::CommandRunner
+# PODNAME: Footprintless::CommandRunner::Exception
+
 use Term::ANSIColor;
 use overload '""' => 'to_string';
 
@@ -73,3 +76,47 @@ sub to_string {
 }
 
 1;
+__END__
+=head1 DESCRIPTION
+
+An exception used by C<Footprintless::CommandRunner> to propagate 
+information related to the reason a command failed.
+
+=constructor new($command, $exit_code, $message, $stderr)
+
+Creates a new C<Footprintless::CommandRunner::Exception> with the 
+supplied information.
+
+=attribute get_command()
+
+Returns the command.
+
+=attribute get_exit_code()
+
+Returns the exit code.
+
+=attribute get_message()
+
+Returns the message.
+
+=attribute get_stderr()
+
+Returns the stderr.
+
+=attribute get_trace()
+
+Returns the stack trace when the command runner C<die>d.
+
+=method exit()
+
+Prints diagnostic information to C<STDERR> then exits with exit code.
+
+=method to_string()
+
+Returns a string representation of this exception.
+
+=for Pod::Coverage PROPAGATE
+
+=head1 SEE ALSO
+Footprintless::CommandRunner
+Footprintless

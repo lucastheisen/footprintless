@@ -3,6 +3,9 @@ use warnings;
 
 package Footprintless::CommandOptionsFactory;
 
+# ABSTRACT: A factory for creating command options
+# PODNAME: Footprintless::CommandOptionsFactory
+
 use Carp;
 use Footprintless::Localhost;
 use Footprintless::Command;
@@ -36,3 +39,42 @@ sub _init {
 }
 
 1;
+__END__
+=head1 DESCRIPTION
+
+This class provides a wrapper around 
+C<Footprintless::Command::command_options> that will use 
+C<Footprintless::Localhost> to determine if the hostname in the options
+is an alias for localhost.  If so, it will remove hostname from the
+options to prevent network operations and allow for local implementation
+optimizations.
+
+=constructor new(%options)
+
+Constructs an instance of C<Footprintless::CommandOptionsFactory>.  The
+supported options are:
+
+=over 4
+
+=item localhost
+
+A preconfigured instance of C<Footprintless::Localhost>.  Defaults to
+an instance with C<load_all()> called.
+
+=item default_ssh
+
+The default ssh command to use if not supplied in the C<%options> 
+passed in to C<command_options(%options)>.  Defaults to C<ssh -q>.
+
+=back
+
+=method command_options(%options)
+
+Removes C<hostname> from C<%options> if it is an alias for localhost, 
+then forwards on to C<Footprintless::Command::command_options>.
+
+=head1 SEE ALSO
+
+Footprintless
+Footprintless::Command
+Footprintless::Localhost

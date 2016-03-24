@@ -3,6 +3,9 @@ use warnings;
 
 package Footprintless::Command;
 
+# ABSTRACT: A factory for building common commands
+# PODNAME: Footprintless::Command
+
 use Exporter qw(import);
 our @EXPORT_OK = qw(
     batch_command
@@ -645,6 +648,22 @@ issued on the console, they might show up in the command history...
 
 =back
 
+=func tail_command( $filename, [\%tail_options], [$command_options])
+
+Will read lines from the end of C<$filename>.  The supported tail options are:
+
+=over 4
+
+=item follow
+
+If I<truthy>, new lines will be read as the file gets written to.
+
+=item lines
+
+The number of lines to obtain from the end fo the file.
+
+=back
+
 =func write_command( $filename, @lines, [\%write_options], [$command_options])
 
 Will write C<@lines> to C<$filename>.  The supported write options are:
@@ -664,4 +683,5 @@ The the separator to use between lines (default: C<\n>).
 =for Pod::Coverage wrap
 
 =head1 SEE ALSO
+
 Footprintless::CommandRunner

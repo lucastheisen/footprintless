@@ -3,6 +3,9 @@ use warnings;
 
 package Footprintless::Resource::UrlProvider;
 
+# ABSTRACT: A resource provider for resources retrieved by URL
+# PODNAME: Footprintless::Resource::UrlProvider
+
 use parent qw(Footprintless::Resource::Provider);
 
 use File::Temp;
@@ -74,7 +77,44 @@ sub filename {
     return $_[0]->{name};
 }
 
-
 1;
 
 __END__
+=constructor new($agent)
+
+Creates a new C<Footprintless::Resource::UrlProvider> that will use 
+C<$agent> to retrieve the resources.  C<$agent> should be an instance of
+C<LWP::UserAgent>.
+
+=method download($resource, \%options)
+
+Downloads C<$resource> and returns the filename it downloaded to.  The
+returned filename may be an object which overrides the C<""> operator so
+that when used in string context, you will get the actual filename.  The
+supported options are:
+
+=over 4
+
+=item to
+
+The path of a directory or filename to download to.
+
+=back
+
+=method resource($spec)
+
+Returns the C<Footprintless::Resource::Url> indicated by C<$spec>.
+
+=method supports($spec)
+
+Returns C<1>.  This provider will attempt to support any spec string.  If
+C<$spec> is missing the scheme part, it will be set to C<file://>.  For
+example, C</foo/bar> would result in the URL C<file:///foo/bar>.
+
+=head1 SEE ALSO
+
+Footprintless::Resource::Provider
+Footprintless::Resource::Url
+Footprintless::ResourceManager
+Footprintless
+URI

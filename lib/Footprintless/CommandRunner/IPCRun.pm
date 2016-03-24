@@ -3,6 +3,9 @@ use warnings;
 
 package Footprintless::CommandRunner::IPCRun;
 
+# ABSTRACT: An implementation of Footprintless::CommandRunner using IPC::Run
+# PODNAME: Footprintless::CommandRunner::IPCRun
+
 use parent qw(Footprintless::CommandRunner);
 
 use Carp;
@@ -70,3 +73,17 @@ sub _run {
 }
 
 1;
+
+__END__
+=head1 DESCRIPTION
+
+An implementation of L<Footprintless::CommandRunner> using C<IPC::Run>.
+
+=constructor new()
+
+Constructs a new instance.
+
+=head1 SEE ALSO
+
+Footprintless
+Footprintless::CommandRunner

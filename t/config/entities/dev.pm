@@ -30,8 +30,8 @@ return {
             resources => {
                 bar => {
                     type => 'maven', 
-                    coordinate=>'com.pastdev:bar:war:1.0.0', 
-                    rename=>'bar.war'
+                    coordinate => 'com.pastdev:bar:war:1.0.0', 
+                    'as' => 'bar.war'
                 },
                 baz => "$properties{'dev.foo.deployment.resources.dir'}/baz.war"
             }

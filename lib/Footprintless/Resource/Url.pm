@@ -3,6 +3,9 @@ use warnings;
 
 package Footprintless::Resource::Url;
 
+# ABSTRACT: A resource described by URL
+# PODNAME: Footprintless::Resource::Url
+
 use parent qw(Footprintless::Resource);
 
 sub get_uri {
@@ -22,3 +25,22 @@ sub _init {
 }
 
 1;
+__END__
+=constructor new($url)
+
+Creates a new C<Footprintless::Resource::Url> for the supplied URL.
+
+=attribute get_uri()
+
+Returns the C<URI> object for the URL.
+
+=attribute get_url()
+
+Returns the URL for this resource.
+
+=head1 SEE ALSO
+
+Footprintless::Resource::UrlProvider
+Footprintless::ResourceManager
+Footprintless
+URI

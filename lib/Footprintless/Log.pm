@@ -3,6 +3,9 @@ use warnings;
 
 package Footprintless::Log;
 
+# ABSTRACT: A log manager
+# PODNAME: Footprintless::Log
+
 use Carp;
 use Footprintless::Command qw(
     command
@@ -174,3 +177,131 @@ sub tail {
 }
 
 1;
+
+__END__
+=head1 SYNOPSIS
+
+    # Standard way of getting a log
+    use Footprintless;
+    my $log = Footprintless->new()->log();
+
+    # Or using inline configuration
+    use Footprintless::Service;
+    my $log = Footprintless::Log->new(
+        Config::Entities->new({
+            entity => {
+                logs => {
+                    catalina => '/opt/tomcat/logs/catalina.out'
+                }
+            }
+        }),
+        'logs.catalina');
+
+    # Wait for tomcat to start
+    $log->follow(until => qr/Started in \d+/); 
+
+    # Check for errors during startup
+    my $error_messages = $log->grep(options => {'ERROR'});
+
+=head1 DESCRIPTION
+
+Provides access to read from log files.
+
+=constructor new($entity, $coordinate, %options)
+
+Constructs a new log manager configured by the C<$entities> at C<$coordinate>.  
+The supported options are:
+
+=over 4
+
+=item command_options_factory
+
+The command options factory to use.  Defaults to an instance of
+L<Footprintless::CommandOptionsFactory> using the C<localhost> instance
+of this object.
+
+=item command_runner
+
+The command runner to use.  Defaults to an instance of 
+L<Footprintless::CommandRunner::IPCRun>.
+
+=item localhost
+
+The localhost alias resolver to use.  Defaults to an instance of
+L<Footprintless::Localhost> configured with C<load_all()>.
+
+=back
+
+=method cat(%options)
+
+Executes the C<cat> command on this log.  The available options are:
+
+=over 4
+
+=item options
+
+Command line options passed to the C<cat> command
+
+=back
+
+=method follow(%options)
+
+Executes the C<tail> command with the C<-f> (follow) option and sets
+the command runner options to pass the C<STDOUT> from tail to this
+C<STDOUT>.
+
+=over 4
+
+=item runner_options
+
+Runner options to be passed on to the command runner.
+
+=item until
+
+The command will stop once the regex supplied is matched to the output.
+
+=back
+
+=method grep(%options)
+
+Executes the C<grep> command on this log.  The available options are:
+
+=over 4
+
+=item options
+
+Command line options passed to the C<grep> command
+
+=back
+
+=method head(%options)
+
+Executes the C<head> command on this log.  The available options are:
+
+=over 4
+
+=item options
+
+Command line options passed to the C<head> command
+
+=back
+
+=method tail(%options)
+
+Executes the C<tail> command on this log.  The available options are:
+
+=over 4
+
+=item options
+
+Command line options passed to the C<tail> command
+
+=back
+
+=head1 SEE ALSO
+
+Config::Entities
+Footprintless
+Footprintless::CommandOptionsFactory
+Footprintless::CommandRunner
+Footprintless::Localhost

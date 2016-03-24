@@ -282,20 +282,22 @@ or subclass of C<Footprintless::CommandOptionsFactory>.
 
 =method agent()
 
-Returns the C<agent> used by this instance.  Will be an instance of 
-C<LWP::UserAgent>.
+Returns the L<agent|LWP::UserAgent> used by this instance. 
 
 =method command_options_factory()
 
-Returns the C<command_options_factory> used by this instance.
+Returns the 
+L<command_options_factory|Footprintless::CommandOptionsFactory> used by 
+this instance.
 
 =method command_runner()
 
-Returns the C<command_runner> used by this instance.
+Returns the L<command_runner|Footprintless::CommandRunner> used by 
+this instance.
 
 =method deployment($coordinate, %options)
 
-Returns a new instance of C<Footprintless::Deployment> preconfigured to
+Returns a new instance of L<Footprintless::Deployment> preconfigured to
 operate on the deployment at C<$coordinate>.  Supported options are
 
 =over 4
@@ -324,16 +326,17 @@ this footprintless instance.
 
 =method entities()
 
-Returns the C<Config::Entities> that were resolved by this footprintless
+Returns the L<Config::Entities> that were resolved by this footprintless
 instance.
 
 =method localhost()
 
-Returns the C<localhost> resolver used by this instance.
+Returns the L<localhost|Footprintless::Localhost> resolver used by 
+this instance.
 
 =method log($coordinate, %options)
 
-Returns a new instance of C<Footprintless::Log> preconfigured to
+Returns a new instance of L<Footprintless::Log> preconfigured to
 operate on the log at C<$coordinate>.  Supported options are
 
 =over 4
@@ -357,7 +360,7 @@ this footprintless instance.
 
 =method overlay($coordinate, %options)
 
-Returns a new instance of C<Footprintless::Overlay> preconfigured to
+Returns a new instance of L<Footprintless::Overlay> preconfigured to
 operate on the overlay at C<$coordinate>.  Supported options are
 
 =over 4
@@ -386,11 +389,12 @@ this footprintless instance.
 
 =method resource_manager()
 
-Returns the C<resource_manager> used by this instance.
+Returns the L<resource_manager|Footprintless::ResourcManager> used by 
+this instance.
 
 =method service($coordinate, %options)
 
-Returns a new instance of C<Footprintless::Service> preconfigured to
+Returns a new instance of L<Footprintless::Service> preconfigured to
 operate on the service at C<$coordinate>.  Supported options are
 
 =over 4
@@ -413,6 +417,7 @@ this footprintless instance.
 =back
 
 =head1 SEE ALSO
+
 Footprintless::Deployment
 Footprintless::Log
 Footprintless::Overlay

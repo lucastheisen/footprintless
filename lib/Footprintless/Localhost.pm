@@ -3,6 +3,9 @@ use warnings;
 
 package Footprintless::Localhost;
 
+# ABSTRACT: A localhost alias resolver
+# PODNAME: Footprintless::Localhost
+
 use Log::Any;
 
 my $logger = Log::Any->get_logger();
@@ -37,6 +40,22 @@ sub _init {
     }
     
     return $self;
+}
+
+sub is_alias {
+    my ($self, $hostname) = @_;
+
+    if ( $hostname ) {
+        return $self->{aliases}{lc($hostname)};
+    }
+    else {
+        return $self->{empty};
+    }
+}
+
+sub is_loaded {
+    my ($self, $extra) = @_;
+    return $self->{loaded} && $self->{loaded}{$extra};
 }
 
 sub load_all {
@@ -98,20 +117,67 @@ sub load_hostname {
     return $self;
 }    
 
-sub is_alias {
-    my ($self, $hostname) = @_;
-
-    if ( $hostname ) {
-        return $self->{aliases}{lc($hostname)};
-    }
-    else {
-        return $self->{empty};
-    }
-}
-
-sub is_loaded {
-    my ($self, $extra) = @_;
-    return $self->{loaded} && $self->{loaded}{$extra};
-}
-
 1;
+
+__END__
+=head1 DESCRIPTION
+
+Provides a I<fairly> thorough attempt to determine if a supplied hostname
+is an alias for localhost (resolves to the same physical machine).  This
+can be useful in determining if local commands can be used in place of
+remote commands.  This is primarily used by the 
+L<Footprintless::CommandOptionsFactory> to create appropriate command
+options for configured entities.
+
+=constructor new(%options)
+
+Constructs a new C<Footprintless::Localhost> preconfigured with the
+default aliases (C<localhost>, C<127.0.0.1>). The available options are:
+
+=over 4
+
+=item aliases
+
+An initial set of preconfigured aliases that should resolve to localhost.
+
+=item empty
+
+Sets the value that will be returned if C<is_alias> is called with a 
+I<falsey> value.
+
+=item none
+
+Stops the constructor from initializing the default aliases: 
+C<localhost>, C<127.0.0.1>.
+
+=back
+
+=method is_alias($hostname)
+
+Returns a I<truthy> value if C<$hostname> is an alias for localhost.
+
+=method is_loaded($source)
+
+Returns a I<truthy> value if C<$source> has already been loaded.  Each
+source is loaded using the C<load_$source> method.
+
+=method load_all()
+
+Loads aliases from all sources.
+
+=method load_etc_hosts()
+
+Loads aliases from the C</etc/hosts> file.
+
+=method load_hostfqdn()
+
+Loads aliases from the C<hostfqdn> command.
+
+=method load_hostname()
+
+Loads aliases from the C<hostname> command.
+
+=head1 SEE ALSO
+
+Footprintless
+Footprintless::CommandOptionsFactory

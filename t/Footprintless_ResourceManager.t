@@ -46,7 +46,7 @@ my $http_url = "http://www.google.com/foo";
 is($manager->resource($http_url)->get_url(), $http_url, 'UrlProvider resolve http');
 
 SKIP: {
-    my $test_count = 4;
+    my $test_count = 6;
     my $coordinate = 'com.pastdev:foo:pom:1.0.1';
 
     my $temp_dir = File::Temp->newdir();
@@ -54,7 +54,7 @@ SKIP: {
     eval {
         $agent = maven_agent($temp_dir);
     };
-    skip($@, $test_count) if ($@);
+    skip("unable to create maven agent: $@", $test_count) if ($@);
 
     my $expected_artifact;
     eval {

@@ -130,5 +130,3 @@ Writes C<$content> to C<$file>.  The available options are:
 If I<truthy>, C<$content> will be appended to C<$file> instead of overwriting.
 
 =back
-
-

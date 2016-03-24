@@ -3,6 +3,9 @@ use warnings;
 
 package Footprintless::Resource::MavenProvider;
 
+# ABSTRACT: A resource provider for resources retrieved by maven coordinate
+# PODNAME: Footprintless::Resource::MavenProvider
+
 use parent qw(Footprintless::Resource::Provider);
 
 sub _download {
@@ -47,3 +50,36 @@ sub supports {
 }
 
 1;
+
+__END__
+=constructor new($maven_agent)
+
+Creates a new C<Footprintless::Resource::MavenProvider> that will use 
+C<$maven_agent> to retrieve the resources.  C<$maven_agent> should be an 
+instance of C<Maven::Agent>.
+
+=method download($resource, \%options)
+
+Downloads C<$resource> and returns the filename it downloaded to.  If 
+using C<Maven::MvnAgent>, the resource will be cached in the local C<.m2>
+repository.  All options are passed through to 
+C<$maven_agent-E<gt>download()>.
+
+=method resource($spec)
+
+Returns the C<Footprintless::Resource::Maven> indicated by C<$spec>.
+
+=method supports($spec)
+
+Returns C<1> if C<$resource> is a hash ref containing an entry for 
+C<coordinate>, or if C<$resource> is a string in the form of a maven 
+coordinate (ex: groupId:artifactId:[packaging]:[classifier]:version).
+
+=head1 SEE ALSO
+
+Footprintless::Resource::Maven
+Footprintless::Resource::Provider
+Footprintless::ResourceManager
+Footprintless
+Maven::Agent
+Maven::MvnAgent

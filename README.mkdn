@@ -10,27 +10,186 @@ version 1.0
 
     use Footprintless;
 
+    my $footprintless = Footprintless->new();
+
+    $footprintless->overlay('dev.foo.overlay')->initialize();
+    $footprintless->service('dev.foo.service')->start();
+
 # DESCRIPTION
 
-This module ...
+This module is used to initialize the configuration and provide a factory
+for some of the core modules.
 
 # CONSTRUCTORS
 
 ## new(\\%entity, %options)
 
-Creates a new Footprintless agent.  Available options are:
+Creates a new Footprintless factory.  Available options are:
 
-- resolver
+- entities
 
-    A preconfigured instance of Template::Resolver.  If not supplied, one
-    will be created with default configuration. 
+    If supplied, `entities` will serve as the configuration for this instance.
+
+- fpl\_home
+
+    The root folder for footprintless configuration.  Defaults to the
+    `$FPL_HOME` environment variable if set, `~/.footprintless` if not.
+
+- config\_dirs
+
+    The root folder(s) for configuration entities.  Defaults to the 
+    `$FPL_CONFIG_DIRS` environment variable if set, `$FPL_HOME/config` if not.
+    `config_dirs` can be a scalar (one directory), or an array ref if there
+    is more than one directory.  If set via the `$FPL_CONFIG_DIRS` environment
+    variable, and you need more than one directory, use a `;` to delimit on
+    windows, or a `:` to delimit on \*nix (same as the `$PATH` variable).
+
+- config\_properties
+
+    The properties file(s) used for placeholder replacement for configuration 
+    entities.  Defaults to the `$FPL_CONFIG_PROPS` environment variable if set, 
+    `$FPL_HOME/properties.pl` if not.  `config_properties` can be a scalar 
+    (one file), or an array ref if there is more than one directory.  If set via 
+    the `$FPL_CONFIG_PROPS` environment variable, and you need more than one 
+    directory, use a `;` to delimit on windows, or a `:` to delimit on \*nix 
+    (same as the `$PATH` variable).
+
+- command\_runner
+
+    Sets the `command_runner` for this instance.  Must be an a subclass of
+    `Footprintless::CommandRunner`.
+
+- localhost
+
+    Sets the `localhost` resolver for this instance.  Must be an instance
+    or subclass of `Footprintless::Localhost`.
+
+- command\_options\_factory
+
+    Sets the `command_options_factory` for this instance.  Must be an instance
+    or subclass of `Footprintless::CommandOptionsFactory`.
 
 # METHODS
 
-## update($entity)
+## agent()
 
-Will read from `$file_handle_or_name` replacing all placeholders prefixed by 
-`$placeholder_prefix`.
+Returns the [agent](https://metacpan.org/pod/LWP::UserAgent) used by this instance. 
+
+## command\_options\_factory()
+
+Returns the 
+[command\_options\_factory](https://metacpan.org/pod/Footprintless::CommandOptionsFactory) used by 
+this instance.
+
+## command\_runner()
+
+Returns the [command\_runner](https://metacpan.org/pod/Footprintless::CommandRunner) used by 
+this instance.
+
+## deployment($coordinate, %options)
+
+Returns a new instance of [Footprintless::Deployment](https://metacpan.org/pod/Footprintless::Deployment) preconfigured to
+operate on the deployment at `$coordinate`.  Supported options are
+
+- command\_options\_factory
+
+    A `command_options_factory` to use instead of that which is supplied by
+    this footprintless instance.
+
+- command\_runner
+
+    A `command_runner` to use instead of that which is supplied by
+    this footprintless instance.
+
+- localhost
+
+    A `localhost` to use instead of that which is supplied by
+    this footprintless instance.
+
+- resource\_manager
+
+    A `resource_manager` to use instead of that which is supplied by
+    this footprintless instance.
+
+## entities()
+
+Returns the [Config::Entities](https://metacpan.org/pod/Config::Entities) that were resolved by this footprintless
+instance.
+
+## localhost()
+
+Returns the [localhost](https://metacpan.org/pod/Footprintless::Localhost) resolver used by 
+this instance.
+
+## log($coordinate, %options)
+
+Returns a new instance of [Footprintless::Log](https://metacpan.org/pod/Footprintless::Log) preconfigured to
+operate on the log at `$coordinate`.  Supported options are
+
+- command\_options\_factory
+
+    A `command_options_factory` to use instead of that which is supplied by
+    this footprintless instance.
+
+- command\_runner
+
+    A `command_runner` to use instead of that which is supplied by
+    this footprintless instance.
+
+- localhost
+
+    A `localhost` to use instead of that which is supplied by
+    this footprintless instance.
+
+## overlay($coordinate, %options)
+
+Returns a new instance of [Footprintless::Overlay](https://metacpan.org/pod/Footprintless::Overlay) preconfigured to
+operate on the overlay at `$coordinate`.  Supported options are
+
+- command\_options\_factory
+
+    A `command_options_factory` to use instead of that which is supplied by
+    this footprintless instance.
+
+- command\_runner
+
+    A `command_runner` to use instead of that which is supplied by
+    this footprintless instance.
+
+- localhost
+
+    A `localhost` to use instead of that which is supplied by
+    this footprintless instance.
+
+- resource\_manager
+
+    A `resource_manager` to use instead of that which is supplied by
+    this footprintless instance.
+
+## resource\_manager()
+
+Returns the [resource\_manager](https://metacpan.org/pod/Footprintless::ResourcManager) used by 
+this instance.
+
+## service($coordinate, %options)
+
+Returns a new instance of [Footprintless::Service](https://metacpan.org/pod/Footprintless::Service) preconfigured to
+operate on the service at `$coordinate`.  Supported options are
+
+- command\_options\_factory
+
+    A `command_options_factory` to use instead of that which is supplied by
+    this footprintless instance.
+
+- command\_runner
+
+    A `command_runner` to use instead of that which is supplied by
+    this footprintless instance.
+
+- localhost
+
+    A `localhost` to use instead of that which is supplied by
+    this footprintless instance.
 
 # AUTHOR
 
@@ -47,6 +206,8 @@ the same terms as the Perl 5 programming language system itself.
 
 Please see those modules/websites for more information related to this module.
 
-- [Config::Entities](https://metacpan.org/pod/Config::Entities)
-- [Template::Resolver](https://metacpan.org/pod/Template::Resolver)
+- [Footprintless::Deployment](https://metacpan.org/pod/Footprintless::Deployment)
+- [Footprintless::Log](https://metacpan.org/pod/Footprintless::Log)
+- [Footprintless::Overlay](https://metacpan.org/pod/Footprintless::Overlay)
+- [Footprintless::Service](https://metacpan.org/pod/Footprintless::Service)
 - [https://github.com/lucastheisen/footprintless](https://github.com/lucastheisen/footprintless)

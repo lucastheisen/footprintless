@@ -3,6 +3,9 @@ use warnings;
 
 package Footprintless::Overlay;
 
+# ABSTRACT: An overlay manager
+# PODNAME: Footprintless::Overlay
+
 use Carp;
 use File::Temp;
 use Footprintless::Command qw(
@@ -167,3 +170,139 @@ sub update {
 }
 
 1;
+
+__END__
+=head1 SYNPOSIS
+
+    # Standard way of getting an overlay
+    use Footprintless;
+    my $overlay = Footprintless->new()->overlay('overlay');
+
+    # Or using inline configuration
+    use Config::Entities;
+    use Footprintless::Overlay;
+    my $overlay = Footprintless::Overlay->new(
+        Config::Entities->new(
+            entities => {
+                foo => {
+                    deployment => { 
+                        'Config::Entities::inherit' => ['hostname', 'sudo_username'],
+                        configuration => {
+                            clean => [
+                                '/opt/tomcat/webapps/',
+                                '/opt/tomcat/temp/',
+                                '/opt/tomcat/work/'
+                            ],
+                            to_dir => '/opt/tomcat/webapps'
+                        },
+                        resources => {
+                            bar => '/home/me/.m2/repository/com/pastdev/bar/1.2/bar-1.2.war',
+                            baz => {
+                                coordinate => 'com.pastdev:baz:war:1.0',
+                                'as' => 'foo.war',
+                                type => 'maven'
+                            }
+                        }
+                    },
+                    overlay => {
+                        'Config::Entities::inherit' => ['hostname', 'sudo_username'],
+                        base_dir => "/home/me/foo/base",
+                        clean => [
+                            "/opt/tomcat/"
+                        ],
+                        deployment_coordinate => 'foo.deployment',
+                        key => 'T',
+                        os => 'linux',
+                        resolver_coordinate => 'foo',
+                        template_dir => "/home/me/foo/template",
+                        to_dir => '/opt/tomcat'
+                    },
+                    hostname => 'test.pastdev.com',
+                    sudo_username => 'developer'
+                }
+            }
+        ),
+        'foo.overlay');
+
+    $overlay->clean();
+
+    $overlay->initialize();
+
+    $overlay->update();
+
+=head1 DESCRIPTION
+
+Overlays are a combination of a directory of static files and a directory 
+of templated files that will be merged to an output directory.  This
+is implemented in L<Template::Overlay>.  If the overlay entity contains a 
+C<deployment_coordinate> entity, then any calls to C<initialize> will also 
+create a L<Footprintless::Deployment> for the indicated entity and call 
+C<deploy> on it.
+
+=constructor new($entity, $coordinate, %options)
+
+Constructs a new overlay configured by C<$entities> at C<$coordinate>.  
+The supported options are:
+
+=over 4
+
+=item agent
+
+If no C<resource_manager> is provided, then this value is used when 
+constructing the default provider(s) for the default resource manager.
+
+=item command_options_factory
+
+The command options factory to use.  Defaults to an instance of
+L<Footprintless::CommandOptionsFactory> using the C<localhost> instance
+of this object.
+
+=item command_runner
+
+The command runner to use.  Defaults to an instance of 
+L<Footprintless::CommandRunner::IPCRun>.
+
+=item localhost
+
+The localhost alias resolver to use.  Defaults to an instance of
+L<Footprintless::Localhost> configured with C<load_all()>.
+
+=item resource_manager
+
+The resource manager to use.  Only used by the deployment if any is
+specified.  Defaults to an instance of 
+L<Footprintless::ResourceManager> configured to use a 
+L<Footprintless::MavenProvider> if L<Maven::Agent> is available, and a
+L<Footprintless::UrlProvider> in that order.
+
+=back
+
+=method clean()
+
+Cleans the overlay.  Each path in the C<clean> entity, will be removed 
+from the destination.  If the path ends in a C</>, then after being 
+removed, the directory will be recreated.
+
+=method initialize()
+
+Will call C<clean>, then C<overlay> on an instance of L<Template::Overlay>
+configured to this entity.  Then, if this entity contains a 
+C<deployment_coordinate>, an instance of L<Footprintless::Deployment>
+will be created for the indicated entity, and its C<deploy> method will be
+called.
+
+=method update()
+
+Will overlay I<ONLY> the templated files.  It will not C<clean>, copy any
+files from C<base_dir>, or C<deploy> like C<initialize> does.
+
+=head1 SEE ALSO
+
+Config::Entities
+Footprintless
+Footprintless::CommandOptionsFactory
+Footprintless::CommandRunner
+Footprintless::Deployment
+Footprintless::Localhost
+Footprintless::ResourceManager
+
