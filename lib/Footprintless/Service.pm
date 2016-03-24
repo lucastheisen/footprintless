@@ -121,7 +121,7 @@ __END__
 
     # Standard way of getting a service
     use Footprintless;
-    my $footprintless = Footprintless->new()->service();
+    my $service = Footprintless->new()->service();
 
     # Or using inline configuration
     use Footprintless::Service;
