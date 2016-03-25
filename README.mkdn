@@ -4,7 +4,7 @@ Footprintless - A utility for managing systems with minimal installs
 
 # VERSION
 
-version 1.0
+version 1.01
 
 # SYNOPSIS
 
@@ -146,7 +146,7 @@ Creates a new Footprintless factory.  Available options are:
 - entities
 
     If supplied, `entities` will serve as the configuration for this instance.
-    All other configuration sources will be ignored.  Must be eithe a hashref, 
+    All other configuration sources will be ignored.  Must be either a hashref, 
     or an instance of [Config::Entities](https://metacpan.org/pod/Config::Entities).
 
 - fpl\_home
