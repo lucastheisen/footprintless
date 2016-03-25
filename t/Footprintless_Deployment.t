@@ -44,12 +44,10 @@ sub entities {
         entity => {
             $name => {
                 deployment => {
-                    configuration => {
-                        to_dir => $to_dir,
-                        clean => ["$to_dir/"]
-                    },
+                    clean => ["$to_dir/"],
                     hostname => 'localhost',
-                    resources => \%resources
+                    resources => \%resources,
+                    to_dir => $to_dir,
                 }
             }
         }

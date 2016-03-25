@@ -165,14 +165,12 @@ sub temp_dirs {
             entity => {
                 system => {
                     deployment => {
-                        configuration => {
-                            clean => ["$webapps_dir/"],
-                            to_dir => $webapps_dir
-                        },
+                        clean => ["$webapps_dir/"],
                         resources => {
                             bar => $barwar,
                             baz => $bazwar
-                        }
+                        },
+                        to_dir => $webapps_dir
                     },
                     overlay => {
                         hostname => 'localhost',

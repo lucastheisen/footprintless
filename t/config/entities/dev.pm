@@ -18,15 +18,12 @@ return {
         },
         deployment => {
             'Config::Entities::inherit' => ['hostname', 'sudo_username'],
-            configuration => {
-                to_dir => "$foo_tomcat_directory/webapps",
-                clean => [
-                    "$foo_tomcat_directory/conf/Catalina/localhost/",
-                    "$foo_tomcat_directory/temp/",
-                    "$foo_tomcat_directory/webapps/",
-                    "$foo_tomcat_directory/work/",
-                ],
-            },
+            clean => [
+                "$foo_tomcat_directory/conf/Catalina/localhost/",
+                "$foo_tomcat_directory/temp/",
+                "$foo_tomcat_directory/webapps/",
+                "$foo_tomcat_directory/work/",
+            ],
             resources => {
                 bar => {
                     type => 'maven', 
@@ -34,7 +31,8 @@ return {
                     'as' => 'bar.war'
                 },
                 baz => "$properties{'dev.foo.deployment.resources.dir'}/baz.war"
-            }
+            },
+            to_dir => "$foo_tomcat_directory/webapps",
         },
         hostname => $properties->{'dev.foo.hostname'},
         logs => {
@@ -58,10 +56,10 @@ return {
             ajp => {
                 port => 8509
             },
+            catalina_base => $foo_tomcat_directory,
             http => {
                 port => 8580
             },
-            catalina_base => $foo_tomcat_directory,
             jmx_port => 8587,
             jpda_port => 8586,
             service => {

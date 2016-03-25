@@ -32,16 +32,16 @@ sub new {
 sub clean {
     my ($self, %options) = @_;
 
-    return unless ($self->{spec}{configuration}{clean} 
-        && @{$self->{spec}{configuration}{clean}});
+    return unless ($self->{spec}{clean} 
+        && @{$self->{spec}{clean}});
 
     my @clean;
     if ($options{rebase}) {
         @clean = map {$self->_rebase($_, $options{rebase})} 
-            @{$self->{spec}{configuration}{clean}};
+            @{$self->{spec}{clean}};
     }
     else {
-        @clean = @{$self->{spec}{configuration}{clean}};
+        @clean = @{$self->{spec}{clean}};
     }
 
     if (@clean) {
@@ -70,13 +70,13 @@ sub deploy {
     my ($is_local, $to_dir);
 
     if ($options{rebase}) {
-        $to_dir = $self->_rebase($self->{spec}{configuration}{to_dir}, 
+        $to_dir = $self->_rebase($self->{spec}{to_dir}, 
             $options{rebase});
         $is_local = 1;
     }
     else {
         $is_local = $self->{localhost}->is_alias($self->{spec}{hostname});
-        $to_dir = $is_local ? $self->{spec}{configuration}{to_dir} : $self->_temp_dir();
+        $to_dir = $is_local ? $self->{spec}{to_dir} : $self->_temp_dir();
     }
 
     my @names = $options{names}
@@ -149,7 +149,7 @@ sub _push_to_destination {
     $self->{command_runner}->run_or_die(
         cp_command(
             $temp_dir, 
-            $self->{spec}{configuration}{to_dir}, 
+            $self->{spec}{to_dir}, 
             $self->_command_options(),
             'status' => $status));
 }
@@ -183,37 +183,6 @@ __END__
     use Footprintless;
     my $deployment = Footprintless->new()->deployment('deployment');
 
-    # Or using inline configuration
-    use Config::Entities;
-    use Footprintless::Deployment;
-    my $deployment = Footprintless::Deployment->new(
-        Config::Entities->new(
-            entities => {
-                deployment => {
-                    'Config::Entities::inherit' => ['hostname', 'sudo_username'],
-                    configuration => {
-                        clean => [
-                            '/opt/tomcat/webapps/',
-                            '/opt/tomcat/temp/',
-                            '/opt/tomcat/work/'
-                        ],
-                        to_dir => '/opt/tomcat/webapps'
-                    },
-                    resources => {
-                        bar => '/home/me/.m2/repository/com/pastdev/bar/1.2/bar-1.2.war',
-                        baz => {
-                            coordinate => 'com.pastdev:baz:war:1.0',
-                            'as' => 'foo.war',
-                            type => 'maven'
-                        }
-                    }
-                },
-                hostname => 'test.pastdev.com',
-                sudo_username => 'developer'
-            }
-        ),
-        'deployment');
-
     # Standard deploy procedure
     $deployment->clean();
     $deployment->deploy();
@@ -236,6 +205,40 @@ are all associated with a single component.  For example, if you are using
 tomcat, a deployment might refer to all of the webapps deployed to the 
 container, and the folders and files that are I<NOT> part of the tomcat
 container itself.  
+
+=head1 ENTITIES
+
+A simple deployment:
+
+    deployment => {
+        clean => ['/opt/app/'],
+        resources => {
+            foo => 'http://download.com/foo.exe',
+            bar => 'http://download.com/bar.exe'
+        },
+        to_dir => '/opt/app'
+    }
+
+A more complex situation, perhaps a tomcat instance:
+
+    deployment => {
+        'Config::Entities::inherit' => ['hostname', 'sudo_username'],
+        clean => [
+            '/opt/tomcat/conf/Catalina/localhost/',
+            '/opt/tomcat/temp/',
+            '/opt/tomcat/webapps/',
+            '/opt/tomcat/work/'
+        ],
+        resources => {
+            bar => '/home/me/.m2/repository/com/pastdev/bar/1.2/bar-1.2.war',
+            baz => {
+                coordinate => 'com.pastdev:baz:war:1.0',
+                'as' => 'foo.war',
+                type => 'maven'
+            }
+        },
+        to_dir => '/opt/tomcat/webapps'
+    }
 
 =constructor new($entity, $coordinate, %options)
 

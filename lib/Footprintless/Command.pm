@@ -475,7 +475,7 @@ hash defining who/where/how to run the command.
 
 =head1 OPTIONS
 
-=func batch_command( $command1, $command2, ..., $commandN, [\%batch_options], [$command_options] )
+=func batch_command($command1, $command2, ..., $commandN, [\%batch_options], [$command_options])
 
 This will join all the commands with a C<;> and apply the supplied 
 C<command_options> to the result.  The supported C<batch_options> are:
@@ -488,12 +488,12 @@ The subshell to run the commands under, must end with C<-c>. (ex: C<'bash -c'>)
 
 =back
 
-=func command( $command, [$command_options] )
+=func command($command, [$command_options])
 
 This wraps the supplied command with all the destination options.  If no 
 options are supplied, $command is returned.
 
-=func command_options( %options ) 
+=func command_options(%options) 
 
 Returns a C<command_options> object to be supplied to other commands.
 All commands can be supplied with C<command_options>.  
@@ -527,7 +527,7 @@ username is specified, the command will not be wrapped in C<ssh>
 
 =back
 
-=func cp_command( $source_path, [$source_command_options], $destination_path, [$destination_command_options], %cp_options )
+=func cp_command($source_path, [$source_command_options], $destination_path, [$destination_command_options], %cp_options)
 
 This generates a command for copying files or directories from a source to
 a destination.  Both source and destination have optional C<command_options>, 
@@ -562,24 +562,24 @@ false (the default).
 
 =back
 
-=func mkdir_command( $path1, $path2, ..., $pathN, [$command_options] )
+=func mkdir_command($path1, $path2, ..., $pathN, [$command_options])
 
 Results in C<mkdir -p $path1 $path2 ... $pathN> with the 
 C<command_options> applied.
 
-=func pipe_command( $command1, $command2, ..., $commandN, [$command_options] )
+=func pipe_command($command1, $command2, ..., $commandN, [$command_options])
 
 Identical to 
 L<batch_command|"batch_command( $command1, $command2, ..., $commandN, [$command_options] )">
 except uses C<\|> to separate the commands instead of C<;>.
 
-=func rm_command( $path1, $path2, ..., $pathN, [$command_options] )
+=func rm_command($path1, $path2, ..., $pathN, [$command_options])
 
 Results in C<rm -rf $path1 $path2 ... $pathN> with the 
 C<command_options> applied. This is a I<VERY> dangerous command and should
 be used with care.
 
-=func sed_command( $expression1, $expression2, ..., $expressionN, [$command_options] )
+=func sed_command($expression1, $expression2, ..., $expressionN, [$command_options])
 
 Constructs a sed command
 
@@ -648,7 +648,7 @@ issued on the console, they might show up in the command history...
 
 =back
 
-=func tail_command( $filename, [\%tail_options], [$command_options])
+=func tail_command($filename, [\%tail_options], [$command_options])
 
 Will read lines from the end of C<$filename>.  The supported tail options are:
 
@@ -664,7 +664,7 @@ The number of lines to obtain from the end fo the file.
 
 =back
 
-=func write_command( $filename, @lines, [\%write_options], [$command_options])
+=func write_command($filename, @lines, [\%write_options], [$command_options])
 
 Will write C<@lines> to C<$filename>.  The supported write options are:
 

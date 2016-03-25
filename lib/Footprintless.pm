@@ -71,7 +71,16 @@ sub _init {
     $logger->debug( 'creating new Footprintless' );
 
     if ($options{entities}) {
-        $self->{entities} = $options{entities};
+        if (ref($options{entities}) eq 'HASH') {
+            $self->{entities} = Config::Entities->new(
+                {entity => $options{entities}});
+        }
+        elsif ($options{entities}->isa('Config::Entities')) {
+            $self->{entities} = $options{entities};
+        }
+        else {
+            croak('illegal entities, must be hashref, or Config::Entities');
+        }
     }
     else {
         my $fpl_home;
@@ -217,17 +226,134 @@ sub _split_dirs {
 __END__
 =head1 SYNOPSIS
 
-  use Footprintless;
+    use Footprintless;
 
-  my $footprintless = Footprintless->new();
+    my $footprintless = Footprintless->new();
 
-  $footprintless->overlay('dev.foo.overlay')->initialize();
-  $footprintless->service('dev.foo.service')->start();
+    # Deploy initialize, start, and follow the log of the foo
+    $footprintless->overlay('dev.foo.overlay')->initialize();
+    $footprintless->service('dev.foo.service')->start();
+    $footprintless->log('dev.foo.logs.app')->follow();
 
 =head1 DESCRIPTION
 
-This module is used to initialize the configuration and provide a factory
-for some of the core modules.
+Footprintless is an automation framework with an application frontend for
+managing diverse software stacks in a consistent fashion.  It provides a
+minimally invasive approach to configuration management.  At its core, 
+L<Config::Entities> are used to define the whole
+L<system|https://en.wikipedia.org/wiki/System>.  Once defined, the
+entities are used by all of the Footprintless modules to decouple the 
+environment from the action.  The environment is defined by the 
+entities used to create 
+L<command options|Footprintless::CommandOptionsFactory>.  Specifically:
+
+    hostname
+    ssh
+    sudo_username
+    username
+
+Each module will have its own entities structure, see them for more 
+details.
+
+=head1 ENTITIES
+
+An example system my consist of multiple environments, each defined
+in their own file:
+
+    ./fooptintless
+                  /entities
+                           /foo
+                               /dev.pm
+                               /qa.pm
+                               /prod.pm
+
+Each one of them would likely be rather similar, perhaps a variation of:
+
+    return {
+        app => {
+            deployment => {
+                'Config::Entities::inherit' => ['hostname', 'sudo_username'],
+                clean => [
+                    '/opt/foo/tomcat/conf/Catalina/localhost/',
+                    '/opt/foo/tomcat/temp/',
+                    '/opt/foo/tomcat/webapps/',
+                    '/opt/foo/tomcat/work/'
+                ],
+                resources => {
+                    bar => 'com.pastdev:bar:war:1.0',
+                    baz => 'com.pastdev:baz:war:1.0'
+                },
+                to_dir => '/opt/foo/tomcat/webapps'
+            },
+            hostname => 'app.pastdev.com',
+            logs => {
+                catalina => '/opt/foo/tomcat/logs/catalina.out'
+            },
+            overlay => {
+                'Config::Entities::inherit' => ['hostname', 'sudo_username'],
+                base_dir => '/home/me/git/foo/base',
+                clean => [
+                    '/opt/foo/tomcat/'
+                ],
+                deployment_coordinate => 'foo.dev.app.deployment',
+                key => 'T',
+                os => 'linux',
+                resolver_coordinate => 'foo.dev',
+                template_dir => '/home/me/git/foo/template',
+                to_dir => '/opt/foo/tomcat'
+            },
+            sudo_username => 'tomcat',
+            tomcat => {
+                'Config::Entities::inherit' => ['hostname', 'sudo_username'],
+                catalina_base => '/opt/foo/tomcat',
+                http => {
+                    port => 20080
+                },
+                service => {
+                    'Config::Entities::inherit' => ['hostname', 'sudo_username'],
+                    action => {
+                        'kill' => { command_args => 'stop -force' },
+                        'status' => { use_pid => 1 }
+                    },
+                    command => '/opt/foo/tomcat/bin/catalina.sh',
+                    pid_file => '/opt/foo/tomcat/bin/.catalina.pid',
+                },
+                shutdown => {
+                    port => 20005,
+                    password => $properties->{'foo.dev.app.tomcat.shutdown.password'},
+                },
+                trust_store => {
+                    'Config::Entities::inherit' => ['hostname', 'sudo_username'],
+                    file => '/opt/foo/tomcat/certs/truststore.jks',
+                    include_java_home_cacerts => 1,
+                    password => $properties->{'foo.dev.app.tomcat.trust_store.password'},
+                }
+            }
+        }
+        web => {
+            hostname => 'web.pastdev.com',
+            logs => {
+                error => '/var/log/httpd/error_log',
+                access => '/var/log/httpd/access_log'
+            }
+            sudo_username => 'apache'
+        }
+    }
+
+Then when you decide to perform an action, the environment is just part
+of the coordinate:
+
+    fpl log foo.dev.app.tomcat.logs.catalina follow
+
+    fpl service foo.qa.app.tomcat.service status
+
+    fpl deployment foo.prod.app.deployment deploy --clean
+
+If using the framework instead, the story is the same:
+
+    my $permission_denied = Footprintless->new()
+        ->log('foo.prod.web.logs.error')
+        ->grep(options => 'Permission denied');
 
 =constructor new(\%entity, %options)
 
@@ -238,6 +364,8 @@ Creates a new Footprintless factory.  Available options are:
 =item entities
 
 If supplied, C<entities> will serve as the configuration for this instance.
+All other configuration sources will be ignored.  Must be either a hashref, 
+or an instance of L<Config::Entities>.
 
 =item fpl_home
 

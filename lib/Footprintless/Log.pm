@@ -98,7 +98,6 @@ sub _init {
             $entity->fill($coordinate,
                 {
                     hostname => undef,
-                    username => undef,
                     ssh => undef,
                     ssh_username => undef,
                     sudo_username => undef
@@ -185,19 +184,7 @@ __END__
     use Footprintless;
     my $log = Footprintless->new()->log();
 
-    # Or using inline configuration
-    use Footprintless::Service;
-    my $log = Footprintless::Log->new(
-        Config::Entities->new({
-            entity => {
-                logs => {
-                    catalina => '/opt/tomcat/logs/catalina.out'
-                }
-            }
-        }),
-        'logs.catalina');
-
-    # Wait for tomcat to start
+    # Wait for a started message before proceeding
     $log->follow(until => qr/Started in \d+/); 
 
     # Check for errors during startup
@@ -206,6 +193,25 @@ __END__
 =head1 DESCRIPTION
 
 Provides access to read from log files.
+
+=head1 ENTITIES
+
+A log entity is simply a name/value:
+
+    catalina => '/opt/tomcat/logs/catalina.out'
+
+They will inherit all of their command options (C<hostname>, C<ssh>, 
+C<sudo_username>, C<username>)from their ancestry.  Logs are commonly 
+grouped together:
+
+    web => {
+        hostname => 'web.pastdev.com',
+        logs => {
+            error => '/var/log/httpd/error_log',
+            access => '/var/log/httpd/access_log'
+        }
+        sudo_username => 'apache'
+    }
 
 =constructor new($entity, $coordinate, %options)
 

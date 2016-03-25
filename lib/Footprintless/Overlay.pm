@@ -172,57 +172,11 @@ sub update {
 1;
 
 __END__
-=head1 SYNPOSIS
+=head1 SYNOPSIS
 
     # Standard way of getting an overlay
     use Footprintless;
     my $overlay = Footprintless->new()->overlay('overlay');
-
-    # Or using inline configuration
-    use Config::Entities;
-    use Footprintless::Overlay;
-    my $overlay = Footprintless::Overlay->new(
-        Config::Entities->new(
-            entities => {
-                foo => {
-                    deployment => { 
-                        'Config::Entities::inherit' => ['hostname', 'sudo_username'],
-                        configuration => {
-                            clean => [
-                                '/opt/tomcat/webapps/',
-                                '/opt/tomcat/temp/',
-                                '/opt/tomcat/work/'
-                            ],
-                            to_dir => '/opt/tomcat/webapps'
-                        },
-                        resources => {
-                            bar => '/home/me/.m2/repository/com/pastdev/bar/1.2/bar-1.2.war',
-                            baz => {
-                                coordinate => 'com.pastdev:baz:war:1.0',
-                                'as' => 'foo.war',
-                                type => 'maven'
-                            }
-                        }
-                    },
-                    overlay => {
-                        'Config::Entities::inherit' => ['hostname', 'sudo_username'],
-                        base_dir => "/home/me/foo/base",
-                        clean => [
-                            "/opt/tomcat/"
-                        ],
-                        deployment_coordinate => 'foo.deployment',
-                        key => 'T',
-                        os => 'linux',
-                        resolver_coordinate => 'foo',
-                        template_dir => "/home/me/foo/template",
-                        to_dir => '/opt/tomcat'
-                    },
-                    hostname => 'test.pastdev.com',
-                    sudo_username => 'developer'
-                }
-            }
-        ),
-        'foo.overlay');
 
     $overlay->clean();
 
@@ -238,6 +192,85 @@ is implemented in L<Template::Overlay>.  If the overlay entity contains a
 C<deployment_coordinate> entity, then any calls to C<initialize> will also 
 create a L<Footprintless::Deployment> for the indicated entity and call 
 C<deploy> on it.
+
+=head1 ENTITIES
+
+A simple overlay: 
+
+    overlay => {
+        base_dir => "/home/me/foo/base",
+        clean => [
+            "/opt/tomcat/"
+        ],
+        hostname => 'localhost',
+        key => 'T',
+        os => 'linux',
+        template_dir => "/home/me/foo/template",
+        to_dir => '/opt/foo/tomcat'
+    }
+
+A more complex example:
+    
+    foo => {
+        deployment => { 
+            'Config::Entities::inherit' => ['hostname', 'sudo_username'],
+            clean => [
+                '/opt/foo/tomcat/conf/Catalina/localhost/',
+                '/opt/foo/tomcat/temp/',
+                '/opt/foo/tomcat/webapps/',
+                '/opt/foo/tomcat/work/'
+            ],
+            resources => {
+                bar => '/home/me/.m2/repository/com/pastdev/bar/1.2/bar-1.2.war',
+                baz => {
+                    coordinate => 'com.pastdev:baz:war:1.0',
+                    'as' => 'foo.war',
+                    type => 'maven'
+                }
+            },
+            to_dir => '/opt/foo/tomcat/webapps'
+        },
+        hostname => 'test.pastdev.com',
+        overlay => {
+            'Config::Entities::inherit' => ['hostname', 'sudo_username'],
+            base_dir => '/home/me/foo/base',
+            clean => [
+                '/opt/foo/tomcat/'
+            ],
+            deployment_coordinate => 'foo.deployment',
+            key => 'T',
+            os => 'linux',
+            resolver_coordinate => 'foo',
+            template_dir => '/home/me/foo/template',
+            to_dir => '/opt/foo/tomcat'
+        },
+        sudo_username => 'developer',
+        tomcat => {
+            'Config::Entities::inherit' => ['hostname', 'sudo_username'],
+            catalina_base => '/opt/foo/tomcat',
+            http => {
+                port => 20080
+            },
+            service => {
+                action => {
+                    'kill' => { command_args => 'stop -force' },
+                    'status' => { use_pid => 1 }
+                },
+                command => '/opt/foo/tomcat/bin/catalina.sh',
+                pid_file => '/opt/foo/tomcat/bin/.catalina.pid',
+            },
+            shutdown => {
+                port => 8505,
+                password => $properties->{'foo.tomcat.shutdown.password'},
+            },
+            trust_store => {
+                'Config::Entities::inherit' => ['hostname', 'sudo_username'],
+                file => '/opt/foo/tomcat/certs/truststore.jks',
+                include_java_home_cacerts => 1,
+                password => $properties->{'foo.tomcat.trust_store.password'},
+            }
+        }
+    }
 
 =constructor new($entity, $coordinate, %options)
 

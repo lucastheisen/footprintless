@@ -3,7 +3,7 @@ use warnings;
 
 use lib 't/lib';
 
-use Test::More tests => 3;
+use Test::More tests => 7;
 use Data::Dumper;
 use Footprintless;
 use File::Basename;
@@ -39,3 +39,13 @@ ok($fpl =
     ), 'load data/entities');
 
 ok($fpl->entities()->{dev}, 'root is dev');
+
+ok($fpl = Footprintless->new(entities => {foo=>'bar'}),
+    'entities hashref');
+is($fpl->entities()->{foo}, 'bar', 'entities hashref foo is bar');
+
+ok($fpl = Footprintless->new(entities => 
+    Config::Entities->new({entity => {foo=>'bar'}})),
+    'entities Config::Entities');
+is($fpl->entities()->{foo}, 'bar', 'entities Config::Entities foo is bar');
+

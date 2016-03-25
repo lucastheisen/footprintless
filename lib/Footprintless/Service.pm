@@ -123,26 +123,6 @@ __END__
     use Footprintless;
     my $service = Footprintless->new()->service();
 
-    # Or using inline configuration
-    use Footprintless::Service;
-    my $service = Footprintless::Service->new(
-        Config::Entities->new({
-            entity => {
-                service => {
-                    command => '/opt/foo/bar.sh',
-                    actions => {
-                        kill => {command => '/foo/kill'},
-                        start => {command => '/foo/start'},
-                        status => {command => '/foo/status'},
-                        stop => {command => '/foo/stop'}
-                    },
-                    pid_file => '/var/run/bar/bar.pid'
-                }
-            }
-        }),
-        'service');
-
-
     $service->stop();
 
     $service->start();
@@ -155,6 +135,33 @@ __END__
 
 Manages services.  Allows you to start, stop, check the status of, and
 kill services.  Additional actions can be configured as well.
+
+=head1 ENTITIES
+
+A simple service (the most common case) can be defined:
+
+    service => {
+        command => '/opt/foo/bar.sh',
+        pid_file => '/var/run/bar/bar.pid'
+    }
+
+A more complex service might be defined:
+
+    service => {
+        actions => {
+            debug => {command_args => "jpda start"},
+            kill => {command_args => "stop -kill"},
+            status => {use_pid => 1, command_name => 'tomcat'},
+        },
+        command => '/opt/tomcat/catalina.sh',
+        hostname => 'tomcat.pastdev.com',
+        pid_command => 'ps -aef|grep "/opt/tomcat/"|grep -v grep|awk \'{print \$2}\'',
+        sudo_username => 'tomcat',
+    }
+
+In this case, an additional action, debug, was added, kill was redefined
+as a special case of stop, and status was redefined to use the pid 
+(ex: kill -0 $pid).  Also, the pid is found via command rather than a file.
 
 =constructor new($entity, $coordinate, %options)
 
@@ -201,30 +208,11 @@ Prints out the status of the service.
 
 Stops the service.
 
-=head1 SPEC
+=head1 SEE ALSO
 
-A simple service (the most common case) can be defined:
-
-    service => {
-        command => '/opt/foo/bar.sh',
-        pid_file => '/var/run/bar/bar.pid'
-    }
-
-A more complex service might be defined:
-
-    service => {
-        actions => {
-            debug => {command_args => "start -debug"},
-            kill => {command_args => "stop -kill"},
-            status => {use_pid => 1, command_name => 'tomcat'},
-        },
-        command => '/opt/tomcat/catalina.sh',
-        hostname => 'tomcat.pastdev.com',
-        pid_command => 'ps -aef|grep "/opt/tomcat/"|grep -v grep|awk \'{print \$2}\'',
-        sudo_username => 'tomcat',
-    }
-
-In this case, an additional action, debug, was added, kill was redefined
-as a special case of stop, and status was redefined to use the pid 
-(ex: kill -0 $pid).  Also, the pid is found via command rather than a file.
+Config::Entities
+Footprintless
+Footprintless::CommandOptionsFactory
+Footprintless::CommandRunner
+Footprintless::Localhost
 
