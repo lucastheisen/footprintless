@@ -7,6 +7,7 @@ package Footprintless::App::Command::log;
 # PODNAME: Footprintless::App::Command::log
 
 use Footprintless::App -command;
+use Footprintless::App::UsageException;
 use Footprintless::Util qw(exit_due_to);
 
 my $logger = Log::Any->get_logger();
@@ -20,55 +21,64 @@ sub _configure_logging {
 
 sub execute {
     my ($self, $opts, $args) = @_;
-    my ($coordinate, $action, @action_args) = @$args;
+    my ($coordinate, $action) = @$args;
 
     if ($opts->{log}) {
         $self->_configure_logging($opts->{log});
     }
 
-    if ($action eq 'follow') {
-        eval {
+    $action ||= 'follow';
+
+    eval {
+        if (!$action || $action eq 'follow') {
             $self->{log}->follow(
-                ($opts->{until} ? (until => $opts->{until}) : ()),
-                runner_options => {out_handle => \*STDOUT});
-        };
-        exit_due_to($@) if ($@);
-    }
-    elsif ($action eq 'tail') {
-        eval {
-            $self->{log}->tail(@action_args);
-        };
-        exit_due_to($@) if ($@);
-    }
-    elsif ($action eq 'head') {
-        eval {
-            $self->{log}->head(@action_args);
-        };
-        exit_due_to($@) if ($@);
-    }
-    elsif ($action eq 'cat') {
-        eval {
-            $self->{log}->cat(@action_args);
-        };
-        exit_due_to($@) if ($@);
-    }
-    elsif ($action eq 'grep') {
-        eval {
-            $self->{log}->grep(@action_args);
-        };
-        exit_due_to($@) if ($@);
+                runner_options => {out_handle => \*STDOUT},
+                ($opts->{until} ? (until => $opts->{until}) : ()));
+        }
+        elsif ($action eq 'tail') {
+            $self->{log}->tail(
+                runner_options => {out_handle => \*STDOUT},
+                ($opts->{options} ? (options => $opts->{options}) : ()));
+        }
+        elsif ($action eq 'head') {
+            $self->{log}->head(
+                runner_options => {out_handle => \*STDOUT},
+                ($opts->{options} ? (options => $opts->{options}) : ()));
+        }
+        elsif ($action eq 'cat') {
+            $self->{log}->cat(
+                runner_options => {out_handle => \*STDOUT},
+                ($opts->{options} ? (options => $opts->{options}) : ()));
+        }
+        elsif ($action eq 'grep') {
+            $self->{log}->grep(
+                runner_options => {out_handle => \*STDOUT},
+                ($opts->{options} ? (options => $opts->{options}) : ()));
+        }
+        else {
+            die(Footprintless::App::UsageException->new(
+                "invalid action [$action]"));
+        }
+    };
+    if ($@) {
+        if (ref($@) && ($@->isa('Footprintless::InvalidEntityException'))
+            || $@->isa('Footprintless::App::UsageException')) {
+            $self->usage_error($@);
+        }
+        exit_due_to($@, 1);
     }
 }
 
 sub opt_spec {
     return (
         ["log=s", "will set the log level",],
+        ["options=s", "options passed to the action",],
         ["until=s", "a perl regex pattern indicating the follow should stop",],
     );
 }
 
 sub usage_desc { 
-    return "fpl %o [COORDINATE]" 
+    return "fpl log [COORDINATE] <ACTION> %o" 
 }
 
 sub validate_args {
@@ -81,10 +91,12 @@ sub validate_args {
     eval {
         $self->{log} = $footprintless->log($args->[0]);
     };
-    $self->usage_error("invalid coordinate [$coordinate]: $@") if ($@);
-
-    $self->usage_error("invalid action [$action]") 
-        unless ($action =~ /^cat|follow|grep|head|tail$/);
+    if ($@) {
+        if (ref($@) && $@->isa('Footprintless::InvalidEntityException')) {
+            $self->usage_error($@);
+        }
+        $self->usage_error("invalid coordinate [$coordinate]: $@");
+    }
 }
 
 1;
@@ -93,19 +105,19 @@ __END__
 
 =head1 SYNOPSIS
 
-  fpl overlay project.environment.component.overlay clean
-  fpl overlay project.environment.component.overlay initialize
-  fpl overlay project.environment.component.overlay update
-  fpl overlay project.environment.component.overlay # same as update
+  fpl log foo.dev.tomcat.logs.catalina follow
+  fpl log foo.prod.web.logs.access grep --options "--color 'GET /foo/bar'"
 
 =head1 DESCRIPTION
 
-Performs actions on an overlay.  The available actions are:
+Provides various forms of read access to log files.  The available actions 
+are:
 
-    clean        removes all files/folders handled by this overlay
-    initialize   clean, then combine the base files and the processed template
-                 files, then deploy
-    update       process the template files, then deploy
+    cat      read the entire file
+    follow   essentially tail -f
+    grep     search for specific content in the file
+    head     read from the beginning of the file
+    tail     read from the end of the file
 
-If no action is specified, C<update> is implied.  For detailed configuration 
+If no action is specified, C<follow> is implied.  For detailed configuration 
 see L<Footprintless::Log>. 

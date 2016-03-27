@@ -7,7 +7,7 @@ package Footprintless::CommandRunner;
 # PODNAME: Footprintless::CommandRunner
 
 use Carp;
-use Footprintless::CommandRunner::Exception;
+use Footprintless::CommandRunner::ExecutionException;
 use Log::Any;
 
 my $logger = Log::Any->get_logger();
@@ -68,7 +68,7 @@ sub run_or_die {
     my ($self, $command, @runner_options) = @_;
     my $exit_code = $self->run($command, @runner_options);
     if ($exit_code) {
-        die(Footprintless::CommandRunner::Exception->new(
+        die(Footprintless::CommandRunner::ExecutionException->new(
             $command,
             $exit_code, 
             $self->{last_call}{exception},
@@ -147,12 +147,13 @@ A handle to use as C<STDOUT> for the command.
 =method run_or_die($command, %runner_options)
 
 Calls L<run|/"run($command, @runner_options)"> and will die with an
-L<Footprintless::CommandRunner::Exception> if the exit code is non-zero.
+L<Footprintless::CommandRunner::ExecutionException> if the exit code is 
+non-zero.
 
 =head1 SEE ALSO
 
 Footprintless::Command
 Footprintless::CommandOptionsFactory
-Footprintless::CommandRunner::Exception
+Footprintless::CommandRunner::ExecutionException
 Footprintless
 

@@ -54,7 +54,7 @@ sub opt_spec {
 }
 
 sub usage_desc { 
-    return "fpl %o [COORDINATE] [ACTION]";
+    return "fpl overlay [COORDINATE] [ACTION] %o";
 }
 
 sub validate_args {

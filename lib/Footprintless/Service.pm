@@ -12,7 +12,9 @@ use Footprintless::Command qw(
     command
 );;
 use Footprintless::CommandOptionsFactory;
+use Footprintless::InvalidEntityException;
 use Footprintless::Localhost;
+use Footprintless::Util qw(invalid_entity);
 use Log::Any;
 
 my $logger = Log::Any->get_logger();
@@ -34,9 +36,13 @@ sub _command {
             return $actions_spec->{command};
         }
         elsif ($actions_spec->{command_args}) {
-            return "$command $actions_spec->{command_args}";
+            $action = $actions_spec->{command_args};
         }
         elsif ($actions_spec->{use_pid}) {
+            invalid_entity("pid_file or pid_command required for [$action]",
+                $self->{coordinate})
+                unless ($self->{spec}{pid_file} || $self->{spec}{pid_command});
+
             my $pid_file = $self->{spec}{pid_file};
             my $pid_command = $pid_file
                 ? "cat $pid_file"
@@ -48,7 +54,7 @@ sub _command {
                 my $command_name = $actions_spec->{command_name} || $command || 'command';
                 return batch_command(
                     "pid=\$($pid_command)",
-                    "if \$(kill -0 \$pid 2> /dev/null)",
+                    "if [[ -n \$pid ]] && \$(kill -0 \$pid 2> /dev/null)",
                     "then printf '$command_name (pid \%s) is running...' \"\$pid\"",
                     "else printf '$command_name is stopped...'",
                     "fi",
@@ -56,10 +62,14 @@ sub _command {
                 )
             }
             else {
-                croak("use_pid not supported for $action");
+                invalid_entity("use_pid not supported for [$action]",
+                    $self->{coordinate});
             }
         }
     }
+
+    invalid_entity("no command specified for [$action]", $self->{coordinate}) 
+        unless ($command);
     return "$command $action";
 }
 
@@ -68,13 +78,24 @@ sub _command_options {
     return $self->{command_options_factory}->command_options(%{$self->{spec}});
 }
 
+sub execute {
+    my ($self, $action) = @_;
+    $self->{command_runner}->run_or_die(
+        command(
+            $self->_command($action),
+            $self->_command_options()),
+        {out_handle => \*STDOUT});
+}
+
 sub _init {
     my ($self, $entity, $coordinate, %options) = @_;
     $logger->tracef("entity=[%s]\ncoordinate=[%s]\noptions=[%s]",
         $entity, $coordinate, \%options);
 
     $self->{entity} = $entity;
+    $self->{coordinate} = $coordinate;
     $self->{spec} = $entity->get_entity($coordinate);
+
     if ($options{command_runner}) {
         $self->{command_runner} = $options{command_runner};
     }
@@ -90,15 +111,6 @@ sub _init {
             localhost => $self->{localhost});
 
     return $self;
-}
-
-sub execute {
-    my ($self, $action) = @_;
-    $self->{command_runner}->run_or_die(
-        command(
-            $self->_command($action),
-            $self->_command_options()),
-        {out_handle => \*STDOUT, err_handle => \*STDERR});
 }
 
 sub start {

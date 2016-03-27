@@ -13,6 +13,7 @@ use Footprintless::Command qw(
 );
 use Footprintless::CommandOptionsFactory;
 use Footprintless::Localhost;
+use Footprintless::Util qw(invalid_entity);
 use Log::Any;
 
 my $logger = Log::Any->get_logger();
@@ -21,25 +22,37 @@ sub new {
     return bless({}, shift)->_init(@_);
 }
 
+sub _action_options {
+    my ($options) = @_;
+    return '' unless ($options);
+
+    my $ref = ref($options);
+    return $options unless ($ref);
+
+    croak("unsupported ref type [$ref] for action options") 
+        unless ($ref eq 'ARRAY');
+    
+    return scalar(@$options) 
+        ? join(' ', @$options, '') 
+        : '';
+}
+
 sub cat {
     my ($self, %options) = @_;
-    my $log_file = $self->{spec};
 
-    my $action_options = scalar($options{options}) 
-        ? join(' ', @{$options{options}}, '') 
-        : '';
+    my $action_options = _action_options($options{options});
 
     return $self->{command_runner}->run_or_die(
-        command("cat $action_options$log_file", $self->{command_options}));
+        command("cat $action_options$self->{log_file}", $self->{command_options}),
+        $self->_runner_options($options{runner_options}));
 }
 
 sub follow {
     my ($self, %options) = @_;
-    my $log_file = $self->{spec};
 
     eval {
         $self->{command_runner}->run_or_die(
-            tail_command($log_file, follow => 1, $self->{command_options}),
+            tail_command($self->{log_file}, follow => 1, $self->{command_options}),
             $self->_runner_options($options{runner_options}, $options{until}));
     };
     if ($@) {
@@ -50,26 +63,22 @@ sub follow {
 
 sub grep {
     my ($self, %options) = @_;
-    my $log_file = $self->{spec};
 
-    my $action_options = scalar($options{options}) 
-        ? join(' ', @{$options{options}}, '') 
-        : '';
+    my $action_options = _action_options($options{options});
 
     return $self->{command_runner}->run_or_die(
-        command("grep $action_options$log_file", $self->{command_options}));
+        command("grep $action_options$self->{log_file}", $self->{command_options}),
+        $self->_runner_options($options{runner_options}));
 }
 
 sub head {
     my ($self, %options) = @_;
-    my $log_file = $self->{spec};
 
-    my $action_options = scalar($options{options}) 
-        ? join(' ', @{$options{options}}, '') 
-        : '';
+    my $action_options = _action_options($options{options});
 
     return $self->{command_runner}->run_or_die(
-        command("head $action_options$log_file", $self->{command_options}));
+        command("head $action_options$self->{log_file}", $self->{command_options}),
+        $self->_runner_options($options{runner_options}));
 }
 
 sub _init {
@@ -104,6 +113,30 @@ sub _init {
                 },
                 ancestry => 1)
         });
+
+    # Allow string, hashref with file key, or object
+    my $ref = ref($self->{spec});
+    if ($ref) {
+        if ($ref eq 'HASH') {
+            if ($self->{spec}{file}) {
+                $self->{log_file} = $self->{spec}{file};
+            }
+            else {
+                invalid_entity("must be file, or hashref with 'file' key",
+                    $coordinate);
+            }
+        }
+        elsif ($ref eq 'SCALAR') {
+            $self->{log_file} = $self->{spec};
+        }
+        else {
+            invalid_entity("must be file, or hashref with 'file' key",
+                $coordinate);
+        }
+    }
+    else {
+        $self->{log_file} = $self->{spec};
+    }
 
     return $self;
 }
@@ -165,14 +198,12 @@ sub _runner_options {
 
 sub tail {
     my ($self, %options) = @_;
-    my $log_file = $self->{spec};
 
-    my $action_options = scalar($options{options}) 
-        ? join(' ', @{$options{options}}, '') 
-        : '';
+    my $action_options = _action_options($options{options});
 
     return $self->{command_runner}->run_or_die(
-        command("tail $action_options$log_file", $self->{command_options}));
+        command("tail $action_options$self->{log_file}", $self->{command_options}),
+        $self->_runner_options($options{runner_options}));
 }
 
 1;
@@ -196,12 +227,19 @@ Provides access to read from log files.
 
 =head1 ENTITIES
 
-A log entity is simply a name/value:
+A log entity can be a simple entity:
 
     catalina => '/opt/tomcat/logs/catalina.out'
 
-They will inherit all of their command options (C<hostname>, C<ssh>, 
-C<sudo_username>, C<username>)from their ancestry.  Logs are commonly 
+Or it can be a hashref entity containing, at minimum, a C<file> entity:
+
+    catalina => {
+        file => '/var/log/external/web/catalina.out',
+        hostname => 'loghost.pastdev.com'
+    }
+
+All unspecified command options will be inherited (C<hostname>, C<ssh>, 
+C<sudo_username>, C<username>) from their ancestry.  Logs are commonly 
 grouped together:
 
     web => {
@@ -209,6 +247,11 @@ grouped together:
         logs => {
             error => '/var/log/httpd/error_log',
             access => '/var/log/httpd/access_log'
+            catalina => {
+                file => '/opt/tomcat/logs/catalina.out',
+                hostname => 'app.pastdev.com',
+                sudo_username => 'tomcat'
+            }
         }
         sudo_username => 'apache'
     }

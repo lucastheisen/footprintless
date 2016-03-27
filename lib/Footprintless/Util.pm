@@ -14,6 +14,7 @@ our @EXPORT_OK = qw(
     default_command_runner
     dumper
     exit_due_to
+    invalid_entity
     slurp
     spurt
 );
@@ -38,16 +39,21 @@ sub dumper {
 }
 
 sub exit_due_to {
-    my ($dollar_at) = @_;
+    my ($dollar_at, $verbose) = @_;
     if (ref($dollar_at) 
         && $dollar_at->isa(
-            'Footprintless::CommandRunner::Exception')) {
-        $@->exit();
+            'Footprintless::CommandRunner::ExecutionException')) {
+        $@->exit($verbose);
     }
     else {
         print(STDERR "$@");
         exit 255;
     }
+}
+
+sub invalid_entity {
+    require Footprintless::InvalidEntityException;
+    die(Footprintless::InvalidEntityException->new(@_));
 }
 
 sub slurp {
@@ -109,11 +115,17 @@ C<Footprintless::CommandRunner>.
 Prints a dump of C<@to_dump> using C<Data::Dumper> with C<Data::Dumper::Indent>
 set to 1.
 
-=func exit_due_to($reason)
+=func exit_due_to($reason, $verbose)
 
-If C<$reason> is an instance of C<Footprintless::CommandRunner::Exception>,
-C<$reason-E<gt>exit()> will be called.  Otherwise, C<$reason> will be printed
-to C<STDERR> and C<exit(255)> will be called.
+If C<$reason> is an instance of 
+L<Footprintless::CommandRunner::ExecutionException>, C<$reason-E<gt>exit()> 
+will be called.  Otherwise, C<$reason> will be printed to C<STDERR> and 
+C<exit(255)> will be called.  The C<$verbose> argument will be passed on
+thusly: C<$reason-E<gt>exit($verbose)>.
+
+=fund invalid_entity($message, $coordinate)
+
+Dies with an instance of L<Footprintless::InvalidEntityException>.
 
 =func slurp($file)
 

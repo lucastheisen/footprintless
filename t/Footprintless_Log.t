@@ -37,42 +37,6 @@ eval {
 my $logger = Log::Any->get_logger();
 my $test_dir = dirname(File::Spec->rel2abs($0));
 
-{
-    my $file = File::Temp->new();
-    my @expected = ('foo', 'foo', 'foo', 'bar');
-    my $pid = fork();
-    if ($pid == 0) {
-        $logger->debug("started child");
-        open(my $handle, '>>', $file);
-        foreach my $line (@expected, 'foo') {
-            print($handle "$line\n");
-            usleep(250000);
-        }
-        close($handle);
-        $logger->debug("finished child, now exit");
-        exit();
-    }
-
-    $logger->debug("started parent");
-    my (@out);
-    Footprintless::Log->new(
-        Config::Entities->new({
-            entity => {
-                logs => {
-                    foo => $file
-                }
-            }
-        }),
-        'logs.foo')
-        ->follow(until => qr/^bar$/, runner_options => {
-            out_callback => sub {push(@out, @_)}
-        });
-
-    wait();
-
-    is_deeply(\@out, \@expected, 'until');
-}
-
 my $command_runner = Footprintless::CommandRunner::Mock->new(
     sub { return 0; });
 my $file = '/foo/bar/baz.log';
@@ -139,4 +103,40 @@ my $file = '/foo/bar/baz.log';
     is($command_runner->get_command(), 
         "ssh -t -t -q foo.example.com \"sudo -u foouser head $file\"", 
         'head ssh');
+}
+
+{
+    my $file = File::Temp->new();
+    my @expected = ('foo', 'foo', 'foo', 'bar');
+    my $pid = fork();
+    if ($pid == 0) {
+        $logger->debug("started child");
+        open(my $handle, '>>', $file);
+        foreach my $line (@expected, 'foo') {
+            print($handle "$line\n");
+            usleep(250000);
+        }
+        close($handle);
+        $logger->debug("finished child, now exit");
+        exit();
+    }
+
+    $logger->debug("started parent");
+    my (@out);
+    Footprintless::Log->new(
+        Config::Entities->new({
+            entity => {
+                logs => {
+                    foo => $file->filename()
+                }
+            }
+        }),
+        'logs.foo')
+        ->follow(until => qr/^bar$/, runner_options => {
+            out_callback => sub {push(@out, @_)}
+        });
+
+    wait();
+
+    is_deeply(\@out, \@expected, 'until');
 }
