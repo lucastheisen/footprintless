@@ -6,15 +6,14 @@ use lib 't/lib';
 use App::Cmd::Tester;
 use Data::Dumper;
 use Footprintless;
-use Footprintless::Util qw(slurp spurt);
+use Footprintless::Util qw(dumper slurp spurt);
 use File::Basename;
 use File::Path qw(make_path);
 use File::Spec;
 use File::Temp;
-use Test::More tests => 1;#5;
+use Test::More tests => 7;
 
 BEGIN {use_ok('Footprintless::App')}
-if (0) {
 
 eval {
     require Getopt::Long;
@@ -49,6 +48,12 @@ sub footprintless {
         }
     }
     FOO
+    my $fpl = File::Spec->catfile($entities_dir, 'fpl.pm');
+    spurt(<<"    FPL", $fpl);
+    return {
+        factory => 'Footprintless::EchoCommandRunnerTestFactory'
+    }
+    FPL
 
     # Get the current entities
     $ENV{FPL_CONFIG_DIRS} = File::Spec->catdir($entities_dir);
@@ -58,31 +63,29 @@ sub footprintless {
 }
 
 my $temp_dir = File::Temp->newdir();
-
 my $footprintless = footprintless($temp_dir);
-my $bar_coordinate = 'foo.logs.bar';
-my $bar_log = $footprintless->entities()->get_entity($bar_coordinate);
-is($bar_log, "$temp_dir/bar.log", 'bar log');
-my $baz_coordinate = 'foo.logs.baz';
-my $baz_log = $footprintless->entities()->get_entity($baz_coordinate);
-is($baz_log, "$temp_dir/baz.log", 'baz log');
-
-if ($logger->is_trace) {
-    $logger->tracef('entities %s', 
-        Data::Dumper->new([$footprintless->entities()])->Indent(1)->Dump());
-}
-
-spurt("one\ntwo\nthree\nfour\nfive", $bar_log);
-spurt("nine\neight\nseven\nsix\nfive", $baz_log);
-
-my $result = test_app('Footprintless::App' => ['log', $bar_coordinate, 'cat']);
-print("REMOVE ME: ", Dumper($result), "\n");
-if (1) {
-is(test_app('Footprintless::App' => ['log', $bar_coordinate, 'cat'])->stdout(),
-    "one\ntwo\nthree\nfour\nfive",
+ok($footprintless, 'footprintless');
+is(ref($footprintless->command_runner()), 
+    'Footprintless::CommandRunner::Echo',
+    'mock command runner');
+is(test_app('Footprintless::App' => ['log', 'foo.logs.bar', 'cat'])->stdout(),
+    "cat " . $footprintless->entities()->get_entity('foo.logs.bar'),
     'cat bar');
-is(test_app('Footprintless::App' => ['log', $baz_coordinate, 'cat'])->stdout(),
-    "nine\neight\nseven\nsix\nfive",
-    'cat baz');
-}
-}
+is(test_app(
+    'Footprintless::App' => [
+        'log', 'foo.logs.bar', 'cat', '--arg', '-n'
+    ])->stdout(),
+    "cat -n " . $footprintless->entities()->get_entity('foo.logs.bar'),
+    'cat -n bar');
+is(test_app(
+    'Footprintless::App' => [
+        'log', 'foo.logs.bar', 'cat', '--arg', '-n -v'
+    ])->stdout(),
+    "cat -n -v " . $footprintless->entities()->get_entity('foo.logs.bar'),
+    'cat -n -v bar');
+is(test_app(
+    'Footprintless::App' => [
+        'log', 'foo.logs.bar', 'grep', '--arg', '--color', '--arg', '"foo/bar"'
+    ])->stdout(),
+    'grep --color "foo/bar" ' . $footprintless->entities()->get_entity('foo.logs.bar'),
+    'grep color foobar');

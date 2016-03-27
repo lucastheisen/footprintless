@@ -3,9 +3,9 @@ use warnings;
 
 use lib 't/lib';
 
-use Test::More tests => 7;
+use Test::More tests => 11;
 use Data::Dumper;
-use Footprintless;
+use Footprintless::ExtendedTestFactory;
 use File::Basename;
 use File::Spec;
 
@@ -49,3 +49,16 @@ ok($fpl = Footprintless->new(entities =>
     'entities Config::Entities');
 is($fpl->entities()->{foo}, 'bar', 'entities Config::Entities foo is bar');
 
+my $extended_footprintless = Footprintless->new(
+    factory => Footprintless::ExtendedTestFactory->new());
+ok($extended_footprintless, 'extended footprintless');
+is($extended_footprintless->foo('bar'), 'bar', 'extended footprintless foobar');
+
+$extended_footprintless = Footprintless->new(
+    entities => {
+        fpl => {
+            factory => 'Footprintless::ExtendedTestFactory'
+        }
+    });
+ok($extended_footprintless, 'extended fpl.factory');
+is($extended_footprintless->foo('bar'), 'bar', 'extended fpl.factory foobar');

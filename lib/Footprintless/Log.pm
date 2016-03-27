@@ -22,28 +22,28 @@ sub new {
     return bless({}, shift)->_init(@_);
 }
 
-sub _action_options {
-    my ($options) = @_;
-    return '' unless ($options);
+sub _action_args {
+    my ($args) = @_;
+    return '' unless ($args);
 
-    my $ref = ref($options);
-    return $options unless ($ref);
+    my $ref = ref($args);
+    return "$args " unless ($ref);
 
     croak("unsupported ref type [$ref] for action options") 
         unless ($ref eq 'ARRAY');
-    
-    return scalar(@$options) 
-        ? join(' ', @$options, '') 
+
+    return scalar(@$args) 
+        ? join(' ', @$args, '') 
         : '';
 }
 
 sub cat {
     my ($self, %options) = @_;
 
-    my $action_options = _action_options($options{options});
+    my $action_args = _action_args($options{args});
 
     return $self->{command_runner}->run_or_die(
-        command("cat $action_options$self->{log_file}", $self->{command_options}),
+        command("cat $action_args$self->{log_file}", $self->{command_options}),
         $self->_runner_options($options{runner_options}));
 }
 
@@ -64,20 +64,20 @@ sub follow {
 sub grep {
     my ($self, %options) = @_;
 
-    my $action_options = _action_options($options{options});
+    my $action_args = _action_args($options{args});
 
     return $self->{command_runner}->run_or_die(
-        command("grep $action_options$self->{log_file}", $self->{command_options}),
+        command("grep $action_args$self->{log_file}", $self->{command_options}),
         $self->_runner_options($options{runner_options}));
 }
 
 sub head {
     my ($self, %options) = @_;
 
-    my $action_options = _action_options($options{options});
+    my $action_args = _action_args($options{args});
 
     return $self->{command_runner}->run_or_die(
-        command("head $action_options$self->{log_file}", $self->{command_options}),
+        command("head $action_args$self->{log_file}", $self->{command_options}),
         $self->_runner_options($options{runner_options}));
 }
 
@@ -199,10 +199,10 @@ sub _runner_options {
 sub tail {
     my ($self, %options) = @_;
 
-    my $action_options = _action_options($options{options});
+    my $action_args = _action_args($options{args});
 
     return $self->{command_runner}->run_or_die(
-        command("tail $action_options$self->{log_file}", $self->{command_options}),
+        command("tail $action_args$self->{log_file}", $self->{command_options}),
         $self->_runner_options($options{runner_options}));
 }
 

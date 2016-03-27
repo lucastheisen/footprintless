@@ -11,58 +11,44 @@ use Config::Entities;
 use Footprintless::Util;
 use Log::Any;
 
+our $AUTOLOAD;
+
 my $logger = Log::Any->get_logger();
 
 sub new {
     return bless({}, shift)->_init(@_);
 }
 
+sub AUTOLOAD {
+    my ($self, @args) = @_;
+    my $method = $AUTOLOAD;
+    $method =~ s/.*:://;
+    $self->{factory}->$method(@args);
+}
+
 sub agent {
-    my ($self) = @_;
-    unless ($self->{agent}) {
-        $self->{agent} = Footprintless::Util::agent();
-    }
-    return $self->{agent};
+    my ($self, @args) = @_;
+    $self->{factory}->agent(@args);
 }
 
 sub command_options_factory {
-    my ($self) = @_;
-    unless ($self->{command_options_factory}) {
-        require Footprintless::CommandOptionsFactory;
-        $self->{command_options_factory} = 
-            Footprintless::CommandOptionsFactory->new(
-                localhost => $self->localhost());
-    }
-    return $self->{command_factory};
+    my ($self, @args) = @_;
+    $self->{factory}->command_options_factory(@args);
 }
 
 sub command_runner {
-    my ($self) = @_;
-    unless ($self->{command_runner}) {
-        require Footprintless::Util;
-        $self->{command_runner} = Footprintless::Util::default_command_runner();
-    }
-    return $self->{command_runner};
+    my ($self, @args) = @_;
+    $self->{factory}->command_runner(@args);
 }
 
 sub deployment {
-    my ($self, $coordinate, %options) = @_;
-
-    require Footprintless::Deployment;
-    return Footprintless::Deployment->new($self->{entities}, $coordinate,
-        command_options_factory => $options{command_options_factory} 
-            || $self->command_options_factory(),
-        command_runner => $options{command_runner} 
-            || $self->command_runner(),
-        localhost => $options{localhost} 
-            || $self->localhost(),
-        resource_manager => $options{resource_manager} 
-            || $self->resource_manager());
+    my ($self, @args) = @_;
+    $self->{factory}->deployment(@args);
 }
 
 sub entities {
-    my ($self) = @_;
-    return $self->{entities};
+    my ($self, @args) = @_;
+    $self->{factory}->entities(@args);
 }
 
 sub _init {
@@ -70,141 +56,110 @@ sub _init {
     
     $logger->debug( 'creating new Footprintless' );
 
-    if ($options{entities}) {
-        if (ref($options{entities}) eq 'HASH') {
-            $self->{entities} = Config::Entities->new(
-                {entity => $options{entities}});
-        }
-        elsif ($options{entities}->isa('Config::Entities')) {
-            $self->{entities} = $options{entities};
-        }
-        else {
-            croak('illegal entities, must be hashref, or Config::Entities');
-        }
+    if ($options{factory}) {
+        $self->{factory} = $options{factory};
     }
     else {
-        my $fpl_home;
-        if ($options{fpl_home}) {
-            $fpl_home = $options{fpl_home};
-        }
-        elsif ($ENV{FPL_HOME}) {
-            $fpl_home = $ENV{FPL_HOME}
-        }
-        else {
-            $fpl_home = File::Spec->catdir($ENV{HOME}, '.footprintless');
-        }
-
-        my @config_dirs = ();
-        if ($options{config_dirs}) {
-            @config_dirs = ref($options{config_dirs}) eq 'ARRAY'
-                ? @{$options{config_dirs}}
-                : ($options{config_dirs});
-        }
-        elsif ($ENV{FPL_CONFIG_DIRS}) {
-            @config_dirs = _split_dirs($ENV{FPL_CONFIG_DIRS});
-        }
-        else {
-            my $default = File::Spec->catdir($fpl_home, 'config');
-            if (-d $default) {
-                @config_dirs = ($default);
+        my $entities;
+        if ($options{entities}) {
+            if (ref($options{entities}) eq 'HASH') {
+                $entities = Config::Entities->new(
+                    {entity => $options{entities}});
+            }
+            elsif ($options{entities}->isa('Config::Entities')) {
+                $entities = $options{entities};
+            }
+            else {
+                croak('illegal entities, must be hashref, or Config::Entities');
             }
         }
+        else {
+            my $fpl_home;
+            if ($options{fpl_home}) {
+                $fpl_home = $options{fpl_home};
+            }
+            elsif ($ENV{FPL_HOME}) {
+                $fpl_home = $ENV{FPL_HOME}
+            }
+            else {
+                $fpl_home = File::Spec->catdir($ENV{HOME}, '.footprintless');
+            }
 
-        my @config_options = ();
-        if ($options{config_properties}) {
-            push(@config_options, properties_file => $options{config_properties});
+            my @config_dirs = ();
+            if ($options{config_dirs}) {
+                @config_dirs = ref($options{config_dirs}) eq 'ARRAY'
+                    ? @{$options{config_dirs}}
+                    : ($options{config_dirs});
+            }
+            elsif ($ENV{FPL_CONFIG_DIRS}) {
+                @config_dirs = _split_dirs($ENV{FPL_CONFIG_DIRS});
+            }
+            else {
+                my $default = File::Spec->catdir($fpl_home, 'config');
+                if (-d $default) {
+                    @config_dirs = ($default);
+                }
+            }
+
+            my @config_options = ();
+            if ($options{config_properties}) {
+                push(@config_options, properties_file => $options{config_properties});
+            }
+            elsif ($ENV{FPL_CONFIG_PROPS}) {
+                my @properties = _split_dirs($ENV{FPL_CONFIG_PROPS});
+                push(@config_options, properties_file => \@properties);
+            }
+            else {
+                my $default = File::Spec->catdir($fpl_home, 'properties.pl');
+                if (-f $default) {
+                    push(@config_options, properties_file => $default);
+                }
+            }
+                
+            $logger->tracef("constructing entities with\n\tconfig_dirs: %s\n\tconfig_options: %s)", 
+                \@config_dirs, {@config_options});
+            $entities = Config::Entities->new(@config_dirs, {@config_options});
         }
-        elsif ($ENV{FPL_CONFIG_PROPS}) {
-            my @properties = _split_dirs($ENV{FPL_CONFIG_PROPS});
-            push(@config_options, properties_file => \@properties);
+
+        my $factory_module = $entities->get_entity('fpl.factory');
+        if ($entities->get_entity('fpl.factory')) {
+            my $factory_module_path = $factory_module;
+            $factory_module_path =~ s/::/\//;
+            require "$factory_module_path.pm";
+            $self->{factory} = $factory_module->new($entities);
         }
         else {
-            my $default = File::Spec->catdir($fpl_home, 'properties.pl');
-            if (-f $default) {
-                push(@config_options, properties_file => $default);
-            }
+            require Footprintless::Factory;
+            $self->{factory} = Footprintless::Factory->new($entities);
         }
-            
-        $logger->tracef("constructing entities with\n\tconfig_dirs: %s\n\tconfig_options: %s)", 
-            \@config_dirs, {@config_options});
-        $self->{entities} = Config::Entities->new(@config_dirs, {@config_options});
     }
-
-    $self->{command_runner} = $options{command_runner};
-    $self->{localhost} = $options{localhost};
-    $self->{command_options_factory} = $options{command_options_factory};
 
     return $self;
 }
 
 sub localhost {
-    my ($self) = @_;
-    unless ($self->{localhost}) {
-        require Footprintless::Localhost;
-        $self->{localhost} = Footprintless::Localhost->new()->load_all();
-    }
-    return $self->{localhost};
+    my ($self, @args) = @_;
+    $self->{factory}->localhost(@args);
 }
 
 sub log {
-    my ($self, $coordinate, %options) = @_;
-
-    require Footprintless::Log;
-    return Footprintless::Log->new(
-        $self->{entities}, $coordinate,
-        command_options_factory => $options{command_options_factory} 
-            || $self->command_options_factory(),
-        command_runner => $options{command_runner} 
-            || $self->command_runner(),
-        localhost => $options{localhost} 
-            || $self->localhost());
+    my ($self, @args) = @_;
+    $self->{factory}->log(@args);
 }
 
 sub overlay {
-    my ($self, $coordinate, %options) = @_;
-
-    require Footprintless::Overlay;
-    return Footprintless::Overlay->new($self->{entities}, $coordinate,
-        command_options_factory => $options{command_options_factory} 
-            || $self->command_options_factory(),
-        command_runner => $options{command_runner} 
-            || $self->command_runner(),
-        localhost => $options{localhost} 
-            || $self->localhost(),
-        resource_manager => $options{resource_manager} 
-            || $self->resource_manager());
+    my ($self, @args) = @_;
+    $self->{factory}->overlay(@args);
 }
 
 sub resource_manager {
-    my ($self) = @_;
-    unless ($self->{resource_manager}) {
-        require Footprintless::ResourceManager;
-        my @providers = ();
-        my $agent = $self->agent();
-        if (require Maven::Agent) {
-            require Footprintless::Resource::MavenProvider;
-            push(@providers, Footprintless::Resource::MavenProvider->new(
-                Maven::Agent->new(agent => $agent)));
-        }
-        require Footprintless::Resource::UrlProvider;
-        $self->{resource_manager} = Footprintless::ResourceManager->new(
-            @providers, 
-            Footprintless::Resource::UrlProvider->new($agent));
-    }
-    return $self->{resource_manager};
+    my ($self, @args) = @_;
+    $self->{factory}->resource_manager(@args);
 }
 
 sub service {
-    my ($self, $coordinate, %options) = @_;
-
-    require Footprintless::Service;
-    return Footprintless::Service->new($self->{entities}, $coordinate,
-        command_options_factory => $options{command_options_factory} 
-            || $self->command_options_factory(),
-        command_runner => $options{command_runner} 
-            || $self->command_runner(),
-        localhost => $options{localhost} 
-            || $self->localhost());
+    my ($self, @args) = @_;
+    $self->{factory}->service(@args);
 }
 
 sub _split_dirs {

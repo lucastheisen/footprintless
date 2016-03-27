@@ -38,22 +38,22 @@ sub execute {
         elsif ($action eq 'tail') {
             $self->{log}->tail(
                 runner_options => {out_handle => \*STDOUT},
-                ($opts->{options} ? (options => $opts->{options}) : ()));
+                ($opts->{arg} ? (args => $opts->{arg}) : ()));
         }
         elsif ($action eq 'head') {
             $self->{log}->head(
                 runner_options => {out_handle => \*STDOUT},
-                ($opts->{options} ? (options => $opts->{options}) : ()));
+                ($opts->{arg} ? (args => $opts->{arg}) : ()));
         }
         elsif ($action eq 'cat') {
             $self->{log}->cat(
                 runner_options => {out_handle => \*STDOUT},
-                ($opts->{options} ? (options => $opts->{options}) : ()));
+                ($opts->{arg} ? (args => $opts->{arg}) : ()));
         }
         elsif ($action eq 'grep') {
             $self->{log}->grep(
                 runner_options => {out_handle => \*STDOUT},
-                ($opts->{options} ? (options => $opts->{options}) : ()));
+                ($opts->{arg} ? (args => $opts->{arg}) : ()));
         }
         else {
             die(Footprintless::App::UsageException->new(
@@ -72,7 +72,7 @@ sub execute {
 sub opt_spec {
     return (
         ["log=s", "will set the log level",],
-        ["options=s", "options passed to the action",],
+        ["arg=s@", "arguments to the action, multiple allowed",],
         ["until=s", "a perl regex pattern indicating the follow should stop",],
     );
 }
@@ -106,7 +106,7 @@ __END__
 =head1 SYNOPSIS
 
   fpl log foo.dev.tomcat.logs.catalina follow
-  fpl log foo.prod.web.logs.access grep --options "--color 'GET /foo/bar'"
+  fpl log foo.prod.web.logs.access grep --arg "--color" --arg "'GET /foo/bar'"
 
 =head1 DESCRIPTION
 

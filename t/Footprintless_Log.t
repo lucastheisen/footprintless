@@ -53,11 +53,11 @@ my $file = '/foo/bar/baz.log';
         command_runner => $command_runner);
     $log->cat();
     is($command_runner->get_command(), "cat $file", 'cat');
-    $log->cat(options => ['-n 5']);
+    $log->cat(args => ['-n 5']);
     is($command_runner->get_command(), "cat -n 5 $file", 'cat "-n 5"');
-    $log->cat(options => ['-n', '5']);
+    $log->cat(args => ['-n', '5']);
     is($command_runner->get_command(), "cat -n 5 $file", 'cat "-n" "5"');
-    $log->grep(options => ["foo"]);
+    $log->grep(args => ["foo"]);
     is($command_runner->get_command(), "grep foo $file", 'grep');
     $log->tail();
     is($command_runner->get_command(), "tail $file", 'tail');
@@ -83,15 +83,15 @@ my $file = '/foo/bar/baz.log';
     is($command_runner->get_command(), 
         "ssh -t -t -q foo.example.com \"sudo -u foouser cat $file\"", 
         'cat ssh');
-    $log->cat(options => ['-n 5']);
+    $log->cat(args => ['-n 5']);
     is($command_runner->get_command(),
         "ssh -t -t -q foo.example.com \"sudo -u foouser cat -n 5 $file\"", 
         'cat ssh "-n 5"');
-    $log->cat(options => ['-n', '5']);
+    $log->cat(args => ['-n', '5']);
     is($command_runner->get_command(), 
         "ssh -t -t -q foo.example.com \"sudo -u foouser cat -n 5 $file\"", 
         'cat ssh "-n" "5"');
-    $log->grep(options => ["foo"]);
+    $log->grep(args => ["foo"]);
     is($command_runner->get_command(), 
         "ssh -t -t -q foo.example.com \"sudo -u foouser grep foo $file\"", 
         'grep ssh');
