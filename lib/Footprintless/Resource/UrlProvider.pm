@@ -8,6 +8,7 @@ package Footprintless::Resource::UrlProvider;
 
 use parent qw(Footprintless::Resource::Provider);
 
+use Carp;
 use File::Temp;
 use Footprintless::Resource::Url;
 use URI;
@@ -27,7 +28,10 @@ sub _download {
         $file = Footprintless::Resource::UrlProvider::DownloadedFile->new();
     }
 
-    $self->{agent}->get($resource->get_uri(), ':content_file' => "$file");
+    my $response = $self->{agent}->get($resource->get_uri(), 
+        ':content_file' => "$file");
+    croak('download failed: ', $response->message())
+        unless ($response->is_success());
     
     return $file;
 }

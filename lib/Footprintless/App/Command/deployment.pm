@@ -8,6 +8,9 @@ package Footprintless::App::Command::deployment;
 
 use Carp;
 use Footprintless::App -command;
+use Footprintless::Util qw(
+    exit_due_to
+);
 use Log::Any;
 use Template::Overlay;
 use Template::Resolver;
@@ -28,20 +31,28 @@ sub execute {
         $self->_configure_logging($opts->{log});
     }
 
-    if ($self->{action} eq 'clean') {
-        $logger->info('Performing clean...');
-        $self->{deployment}->clean();
-    }
-    elsif ($self->{action} eq 'deploy') {
-        if ($opts->{clean}) {
+    eval {
+        if ($self->{action} eq 'clean') {
             $logger->info('Performing clean...');
             $self->{deployment}->clean();
         }
-        $logger->info('Performing deploy...');
-        $self->{deployment}->deploy();
-    }
-    else {
-        croak("whoops, validation is broken, fix it");
+        elsif ($self->{action} eq 'deploy') {
+            if ($opts->{clean}) {
+                $logger->info('Performing clean...');
+                $self->{deployment}->clean();
+            }
+            $logger->info('Performing deploy...');
+            $self->{deployment}->deploy();
+        }
+        else {
+            $self->usage_error("unsupported action [$self->{action}]");
+        }
+    };
+    if ($@) {
+        if (ref($@) && $@->isa('Footprintless::InvalidEntityException')) {
+            $self->usage_error($@);
+        }
+        exit_due_to($@, 1);
     }
 
     $logger->info('Done...');
@@ -71,8 +82,6 @@ sub validate_args {
     $self->usage_error("invalid coordinate [$coordinate]: $@") if ($@);
 
     $self->{action} = $action || 'deploy';
-    $self->usage_error("invalid action [$action], must be one of clean, deploy")
-        unless ($self->{action} =~ /^clean|deploy$/);
 }
 
 1;

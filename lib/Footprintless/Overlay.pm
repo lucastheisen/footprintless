@@ -16,6 +16,11 @@ use Footprintless::Command qw(
 );
 use Footprintless::CommandRunner;
 use Footprintless::Localhost;
+use Footprintless::Util qw(
+    extract
+    invalid_entity
+    temp_dir
+);
 use Log::Any;
 use Template::Resolver;
 use Template::Overlay;
@@ -29,55 +34,27 @@ sub new {
 sub clean {
     my ($self) = @_;
 
-    my $clean = $self->{spec}{clean};
-    if ($clean) {
-        $logger->debugf("cleaning overlay %s", $clean);
-        eval {
-            $self->{command_runner}->run_or_die(
-                batch_command(
-                    rm_command(@$clean),
-                    mkdir_command(@$clean),
-                    $self->_command_options()));
-        };
-        if ($@) {
-            $logger->error('clean failed: %s', $@);
-            croak($@);
-        }
-    }
-}
-
-sub _command_options {
-    my ($self) = @_;
-    return $self->{command_options_factory}->command_options(%{$self->{spec}});
+    Footprintless::Util::clean($self->{spec}{clean},
+        command_runner => $self->{command_runner},
+        command_options => $self->{command_options});
 }
 
 sub _init {
-    my ($self, $entity, $coordinate, %options) = @_;
-    $logger->tracef("entity=[%s],coordinate=[%s],options=[%s]",
-        $entity, $coordinate, \%options);
+    my ($self, $factory, $coordinate, %options) = @_;
+    $logger->tracef("coordinate=[%s],options=[%s]",
+        $coordinate, \%options);
 
-    $self->{entity} = $entity;
-    $self->{spec} = $entity->get_entity($coordinate);
-    croak("base_dir, to_dir, template_dir required") 
+    $self->{entity} = $factory->entities();
+    $self->{spec} = $self->{entity}->get_entity($coordinate);
+    invalid_entity("base_dir, to_dir, template_dir required") 
         unless ($self->{spec}{base_dir}
             && $self->{spec}{to_dir}
             && $self->{spec}{template_dir});
 
-    $self->{agent} = $options{agent};
-    $self->{resource_manager} = $options{resource_manager};
-    if ($options{command_runner}) {
-        $self->{command_runner} = $options{command_runner};
-    }
-    else {
-        require Footprintless::CommandRunner::IPCRun;
-        $self->{command_runner} = 
-            Footprintless::CommandRunner::IPCRun->new();
-    }
-    $self->{localhost} = $options{localhost}
-        || Footprintless::Localhost->new()->load_all();
-    $self->{command_options_factory} = $options{command_options_factory}
-        || Footprintless::CommandOptionsFactory->new(
-            localhost => $self->{localhost});
+    $self->{factory} = $factory;
+    $self->{localhost} = $factory->localhost();
+    $self->{command_runner} = $factory->command_runner();
+    $self->{command_options} = $factory->command_options(%{$self->{spec}});
 
     return $self;
 }
@@ -85,32 +62,38 @@ sub _init {
 sub initialize {
     my ($self) = @_;
     my $is_local = $self->{localhost}->is_alias($self->{spec}{hostname});
-    my $to_dir = $is_local ? $self->{spec}{to_dir} : $self->_temp_dir();
+    my $to_dir = $is_local ? $self->{spec}{to_dir} : temp_dir();
 
     $self->clean();
 
-    $self->_overlay($self->{spec}{base_dir})
-        ->overlay($self->{spec}{template_dir},
-            to => $to_dir);
+    my ($base_dir, $template_dir, $resource_dir);
+    if ($self->{spec}{resource}) {
+        $resource_dir = temp_dir();
 
-    if ($self->{spec}{deployment_coordinate}) {
-        $logger->debugf('deploying %s', $self->{spec}{deployment_coordinate});
-        require Footprintless::Deployment;
-        my $deployment = Footprintless::Deployment->new(
-            $self->{entity}, $self->{spec}{deployment_coordinate},
-            resource_manager => $self->{resource_manager},
-            agent => $self->{agent},
-            command_runner => $self->{command_runner},
-            localhost => $self->{localhost},
-            command_options_factory => $self->{command_options_factory});
+        my $download_dir = File::Spec->catdir($resource_dir, 'download');
+        mkdir($download_dir);
+        my $archive = $self->{factory}->resource_manager()
+            ->download($self->{spec}{resource}, to => $download_dir),
 
-        # clean will ensure base directory is created if necessary
-        my @rebase = $is_local 
-            ? () 
-            : (rebase => {'from' => "$self->{spec}{to_dir}", to => "$to_dir"});
-        $deployment->clean(@rebase);
-        $deployment->deploy(@rebase);
+        my $unpack_dir = File::Spec->catdir($resource_dir, 'unpack');
+        mkdir($unpack_dir);
+        extract($archive, to => $unpack_dir);
+
+        if ($self->{spec}{base_dir}) {
+            $base_dir = File::Spec->catdir($unpack_dir, 
+                $self->{spec}{base_dir});
+        }
+        if ($self->{spec}{template_dir}) {
+            $template_dir = File::Spec->catdir($unpack_dir, 
+                $self->{spec}{template_dir});
+        }
     }
+    else {
+        $base_dir = $self->{spec}{base_dir};
+        $template_dir = $self->{spec}{template_dir};
+    }
+
+    $self->_overlay($base_dir)->overlay($template_dir, to => $to_dir);
 
     $self->_push_to_destination($to_dir) unless ($is_local);
 }
@@ -128,12 +111,14 @@ sub _overlay {
 }
 
 sub _push_to_destination {
-    my ($self, $temp_dir) = @_;
+    my ($self, $temp_dir, $status) = @_;
 
     $self->{command_runner}->run_or_die(
         cp_command(
             $temp_dir, 
-            $self->{spec}{to_dir}, $self->_command_options()));
+            $self->{spec}{to_dir},
+            $self->{command_options},
+            'status' => $status));
 }
 
 sub _resolver {
@@ -150,17 +135,10 @@ sub _resolver {
     return Template::Resolver->new($resolver_spec, @resolver_opts);
 }
 
-sub _temp_dir {
-    my ($self) = @_;
-
-    File::Temp->safe_level(File::Temp::HIGH);
-    return File::Temp->newdir();
-}
-
 sub update {
     my ($self) = @_;
     my $is_local = $self->{localhost}->is_alias($self->{spec}{hostname});
-    my $to_dir = $is_local ? $self->{spec}{to_dir} : $self->_temp_dir();
+    my $to_dir = $is_local ? $self->{spec}{to_dir} : temp_dir();
 
     $logger->tracef("update to=[%s], template=[%s]", $to_dir, $self->{spec}{template_dir});
     $self->_overlay($to_dir)
@@ -188,10 +166,7 @@ __END__
 
 Overlays are a combination of a directory of static files and a directory 
 of templated files that will be merged to an output directory.  This
-is implemented in L<Template::Overlay>.  If the overlay entity contains a 
-C<deployment_coordinate> entity, then any calls to C<initialize> will also 
-create a L<Footprintless::Deployment> for the indicated entity and call 
-C<deploy> on it.
+is implemented in L<Template::Overlay>.  
 
 =head1 ENTITIES
 
@@ -212,24 +187,6 @@ A simple overlay:
 A more complex example:
     
     foo => {
-        deployment => { 
-            'Config::Entities::inherit' => ['hostname', 'sudo_username'],
-            clean => [
-                '/opt/foo/tomcat/conf/Catalina/localhost/',
-                '/opt/foo/tomcat/temp/',
-                '/opt/foo/tomcat/webapps/',
-                '/opt/foo/tomcat/work/'
-            ],
-            resources => {
-                bar => '/home/me/.m2/repository/com/pastdev/bar/1.2/bar-1.2.war',
-                baz => {
-                    coordinate => 'com.pastdev:baz:war:1.0',
-                    'as' => 'foo.war',
-                    type => 'maven'
-                }
-            },
-            to_dir => '/opt/foo/tomcat/webapps'
-        },
         hostname => 'test.pastdev.com',
         overlay => {
             'Config::Entities::inherit' => ['hostname', 'sudo_username'],
@@ -237,7 +194,6 @@ A more complex example:
             clean => [
                 '/opt/foo/tomcat/'
             ],
-            deployment_coordinate => 'foo.deployment',
             key => 'T',
             os => 'linux',
             resolver_coordinate => 'foo',
@@ -279,11 +235,6 @@ The supported options are:
 
 =over 4
 
-=item agent
-
-If no C<resource_manager> is provided, then this value is used when 
-constructing the default provider(s) for the default resource manager.
-
 =item command_options_factory
 
 The command options factory to use.  Defaults to an instance of
@@ -300,14 +251,6 @@ L<Footprintless::CommandRunner::IPCRun>.
 The localhost alias resolver to use.  Defaults to an instance of
 L<Footprintless::Localhost> configured with C<load_all()>.
 
-=item resource_manager
-
-The resource manager to use.  Only used by the deployment if any is
-specified.  Defaults to an instance of 
-L<Footprintless::ResourceManager> configured to use a 
-L<Footprintless::MavenProvider> if L<Maven::Agent> is available, and a
-L<Footprintless::UrlProvider> in that order.
-
 =back
 
 =method clean()
@@ -319,15 +262,12 @@ removed, the directory will be recreated.
 =method initialize()
 
 Will call C<clean>, then C<overlay> on an instance of L<Template::Overlay>
-configured to this entity.  Then, if this entity contains a 
-C<deployment_coordinate>, an instance of L<Footprintless::Deployment>
-will be created for the indicated entity, and its C<deploy> method will be
-called.
+configured to this entity.  
 
 =method update()
 
-Will overlay I<ONLY> the templated files.  It will not C<clean>, copy any
-files from C<base_dir>, or C<deploy> like C<initialize> does.
+Will overlay I<ONLY> the templated files.  It will not C<clean>, nor copy 
+any files from C<base_dir> like C<initialize> does.
 
 =head1 SEE ALSO
 

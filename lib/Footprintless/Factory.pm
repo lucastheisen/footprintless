@@ -26,6 +26,11 @@ sub agent {
     return $self->{agent};
 }
 
+sub command_options {
+    my ($self, @spec) = @_;
+    return $self->command_options_factory()->command_options(@spec);
+}
+
 sub command_options_factory {
     my ($self) = @_;
 
@@ -36,7 +41,7 @@ sub command_options_factory {
                 localhost => $self->localhost());
     }
 
-    return $self->{command_factory};
+    return $self->{command_options_factory};
 }
 
 sub command_runner {
@@ -54,15 +59,7 @@ sub deployment {
     my ($self, $coordinate, %options) = @_;
 
     require Footprintless::Deployment;
-    return Footprintless::Deployment->new($self->{entities}, $coordinate,
-        command_options_factory => $options{command_options_factory} 
-            || $self->command_options_factory(),
-        command_runner => $options{command_runner} 
-            || $self->command_runner(),
-        localhost => $options{localhost} 
-            || $self->localhost(),
-        resource_manager => $options{resource_manager} 
-            || $self->resource_manager());
+    return Footprintless::Deployment->new($self, $coordinate, %options);
 }
 
 sub entities {
@@ -70,9 +67,27 @@ sub entities {
 }
 
 sub _init {
-    my ($self, $entities) = @_;
+    my ($self, $entities, %options) = @_;
     
     $self->{entities} = $entities;
+    $self->{agent} = $options{agent};
+    $self->{command_options_factory} = $options{command_options_factory};
+    $self->{command_runner} = $options{command_runner};
+    $self->{resource_manager} = $options{resource_manager};
+
+    $self->{plugins} = [];
+    if ($self->{entities}{'footprintless'}) {
+        my $plugin_modules = $self->{entities}{'footprintless'}{plugins};
+        if ($plugin_modules) {
+            foreach my $plugin_module (@$plugin_modules) {
+                $logger->debugf('registering plugin %s', $plugin_module);
+                my $plugin_module_path = $plugin_module;
+                $plugin_module_path =~ s/::/\//g;
+                require "$plugin_module_path.pm"; ## no critic
+                $self->register_plugin($plugin_module->new());
+            }
+        }
+    }
 
     return $self;
 }
@@ -92,47 +107,43 @@ sub log {
     my ($self, $coordinate, %options) = @_;
 
     require Footprintless::Log;
-    return Footprintless::Log->new(
-        $self->{entities}, $coordinate,
-        command_options_factory => $options{command_options_factory} 
-            || $self->command_options_factory(),
-        command_runner => $options{command_runner} 
-            || $self->command_runner(),
-        localhost => $options{localhost} 
-            || $self->localhost());
+    return Footprintless::Log->new($self, $coordinate, %options)
 }
 
 sub overlay {
     my ($self, $coordinate, %options) = @_;
 
     require Footprintless::Overlay;
-    return Footprintless::Overlay->new($self->{entities}, $coordinate,
-        command_options_factory => $options{command_options_factory} 
-            || $self->command_options_factory(),
-        command_runner => $options{command_runner} 
-            || $self->command_runner(),
-        localhost => $options{localhost} 
-            || $self->localhost(),
-        resource_manager => $options{resource_manager} 
-            || $self->resource_manager());
+    return Footprintless::Overlay->new($self, $coordinate, %options)
+}
+
+sub plugins {
+    return @{$_[0]->{plugins}};
+}
+
+sub register_plugin {
+    my ($self, $plugin) = @_;
+
+    push(@{$self->{plugins}}, $plugin);
+
+    my $factory_methods = $plugin->factory_methods();
+    if ($factory_methods) {
+        foreach my $factory_method_name (keys(%$factory_methods)) {
+            my $method = ref($self) . "::$factory_method_name";
+            no strict 'refs';
+            *$method = sub {
+                &{$factory_methods->{$factory_method_name}}(@_);
+            }
+        }
+    }
 }
 
 sub resource_manager {
     my ($self) = @_;
     
     unless ($self->{resource_manager}) {
-        require Footprintless::ResourceManager;
-        my @providers = ();
-        my $agent = $self->agent();
-        if (require Maven::Agent) {
-            require Footprintless::Resource::MavenProvider;
-            push(@providers, Footprintless::Resource::MavenProvider->new(
-                Maven::Agent->new(agent => $agent)));
-        }
-        require Footprintless::Resource::UrlProvider;
-        $self->{resource_manager} = Footprintless::ResourceManager->new(
-            @providers, 
-            Footprintless::Resource::UrlProvider->new($agent));
+        $self->{resource_manager} = 
+            Footprintless::Util::resource_manager($self->agent())
     }
 
     return $self->{resource_manager};
@@ -142,13 +153,7 @@ sub service {
     my ($self, $coordinate, %options) = @_;
 
     require Footprintless::Service;
-    return Footprintless::Service->new($self->{entities}, $coordinate,
-        command_options_factory => $options{command_options_factory} 
-            || $self->command_options_factory(),
-        command_runner => $options{command_runner} 
-            || $self->command_runner(),
-        localhost => $options{localhost} 
-            || $self->localhost());
+    return Footprintless::Service->new($self, $coordinate, %options);
 }
 
 1;

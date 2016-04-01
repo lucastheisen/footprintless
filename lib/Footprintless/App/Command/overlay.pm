@@ -91,8 +91,8 @@ Performs actions on an overlay.  The available actions are:
 
     clean        removes all files/folders handled by this overlay
     initialize   clean, then combine the base files and the processed template
-                 files, then deploy
-    update       process the template files, then deploy
+                 files
+    update       process the template files
 
 If no action is specified, C<update> is implied.  For detailed configuration 
 see L<Footprintless::Overlay>. 

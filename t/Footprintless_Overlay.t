@@ -10,10 +10,11 @@ use Footprintless::Localhost;
 use Footprintless::Util qw(
     default_command_runner 
     dumper 
+    factory
     slurp 
     spurt
 );
-use Test::More tests => 15;
+use Test::More tests => 11;
 
 BEGIN {use_ok('Footprintless::Overlay')}
 
@@ -51,22 +52,20 @@ sub temp_dirs {
     my ($temp_dir, $base_dir, $to_dir, $template_dir) = temp_dirs();
     my $hostname = 'localhost';
     my $overlay = Footprintless::Overlay->new(
-        Config::Entities->new({
-            entity => {
-                system => {
-                    hostname => $hostname,
-                    app => {
-                        'Config::Entities::inherit' => ['hostname'],
-                        overlay => {
-                            'Config::Entities::inherit' => ['hostname', 'sudo_username'],
-                            base_dir => $base_dir,
-                            clean => ["$to_dir/"],
-                            key => 'T',
-                            os => $^O,
-                            resolver_coordinate => 'system',
-                            template_dir => $template_dir,
-                            to_dir => $to_dir
-                        }
+        factory({
+            system => {
+                hostname => $hostname,
+                app => {
+                    'Config::Entities::inherit' => ['hostname'],
+                    overlay => {
+                        'Config::Entities::inherit' => ['hostname', 'sudo_username'],
+                        base_dir => $base_dir,
+                        clean => ["$to_dir/"],
+                        key => 'T',
+                        os => $^O,
+                        resolver_coordinate => 'system',
+                        template_dir => $template_dir,
+                        to_dir => $to_dir
                     }
                 }
             }
@@ -93,22 +92,20 @@ sub temp_dirs {
     my ($temp_dir, $base_dir, $to_dir, $template_dir) = temp_dirs();
     my $hostname = 'localhost';
     my $overlay = Footprintless::Overlay->new(
-        Config::Entities->new({
-            entity => {
-                system => {
-                    hostname => $hostname,
-                    app => {
-                        'Config::Entities::inherit' => ['hostname'],
-                        overlay => {
-                            'Config::Entities::inherit' => ['hostname', 'sudo_username'],
-                            base_dir => $base_dir,
-                            clean => ["$to_dir/"],
-                            key => 'T',
-                            os => $^O,
-                            resolver_coordinate => 'system',
-                            template_dir => $template_dir,
-                            to_dir => $to_dir
-                        }
+        factory({
+            system => {
+                hostname => $hostname,
+                app => {
+                    'Config::Entities::inherit' => ['hostname'],
+                    overlay => {
+                        'Config::Entities::inherit' => ['hostname', 'sudo_username'],
+                        base_dir => $base_dir,
+                        clean => ["$to_dir/"],
+                        key => 'T',
+                        os => $^O,
+                        resolver_coordinate => 'system',
+                        template_dir => $template_dir,
+                        to_dir => $to_dir
                     }
                 }
             }
@@ -128,18 +125,16 @@ sub temp_dirs {
     $logger->info('Verify clean');
     my ($temp_dir, $base_dir, $to_dir, $template_dir) = temp_dirs();
     my $overlay = Footprintless::Overlay->new(
-        Config::Entities->new({
-            entity => {
-                overlay => {
-                    hostname => 'localhost',
-                    base_dir => $base_dir,
-                    clean => ["$to_dir/"],
-                    key => 'T',
-                    os => $^O,
-                    resolver_coordinate => 'system',
-                    template_dir => $template_dir,
-                    to_dir => $to_dir
-                }
+        factory({
+            overlay => {
+                hostname => 'localhost',
+                base_dir => $base_dir,
+                clean => ["$to_dir/"],
+                key => 'T',
+                os => $^O,
+                resolver_coordinate => 'system',
+                template_dir => $template_dir,
+                to_dir => $to_dir
             }
         }),
         'overlay');
@@ -148,52 +143,6 @@ sub temp_dirs {
     ok(-f $to_file, 'clean test to_file created');
     $overlay->clean();
     ok(!-e $to_file, 'clean test');
-}
-
-{
-    $logger->info('Verify deployment on initialize');
-    my ($temp_dir, $base_dir, $to_dir, $template_dir) = temp_dirs();
-
-    my $webapps_dir = File::Spec->catdir($to_dir, 'webapps');
-    my $barwar = File::Spec->catfile($test_dir, 'data', 'resources', 'bar.war');
-    my $to_barwar = File::Spec->catfile($webapps_dir, 'bar.war');
-    my $bazwar = File::Spec->catfile($test_dir, 'data', 'resources', 'baz.war');
-    my $to_bazwar = File::Spec->catfile($webapps_dir, 'baz.war');
-
-    my $overlay = Footprintless::Overlay->new(
-        Config::Entities->new({
-            entity => {
-                system => {
-                    deployment => {
-                        clean => ["$webapps_dir/"],
-                        resources => {
-                            bar => $barwar,
-                            baz => $bazwar
-                        },
-                        to_dir => $webapps_dir
-                    },
-                    overlay => {
-                        hostname => 'localhost',
-                        base_dir => $base_dir,
-                        clean => ["$to_dir/"],
-                        deployment_coordinate => 'system.deployment',
-                        key => 'T',
-                        os => $^O,
-                        resolver_coordinate => 'system',
-                        template_dir => $template_dir,
-                        to_dir => $to_dir
-                    }
-                }
-            }
-        }),
-        'system.overlay');
-
-    $overlay->initialize();
-
-    ok(-f $to_barwar, "bar deployed $to_barwar");
-    is(slurp($to_barwar), slurp($barwar), 'bar is bar');
-    ok(-f $to_bazwar, 'baz deployed');
-    is(slurp($to_bazwar), slurp($bazwar), 'baz is baz');
 }
 
 SKIP: {
@@ -210,22 +159,20 @@ SKIP: {
     my ($temp_dir, $base_dir, $to_dir, $template_dir) = temp_dirs();
     my $hostname = 'localhost';
     my $overlay = Footprintless::Overlay->new(
-        Config::Entities->new({
-            entity => {
-                system => {
-                    hostname => $hostname,
-                    app => {
-                        'Config::Entities::inherit' => ['hostname'],
-                        overlay => {
-                            'Config::Entities::inherit' => ['hostname', 'sudo_username'],
-                            base_dir => $base_dir,
-                            clean => ["$to_dir/"],
-                            key => 'T',
-                            os => $^O,
-                            resolver_coordinate => 'system',
-                            template_dir => $template_dir,
-                            to_dir => $to_dir
-                        }
+        factory({
+            system => {
+                hostname => $hostname,
+                app => {
+                    'Config::Entities::inherit' => ['hostname'],
+                    overlay => {
+                        'Config::Entities::inherit' => ['hostname', 'sudo_username'],
+                        base_dir => $base_dir,
+                        clean => ["$to_dir/"],
+                        key => 'T',
+                        os => $^O,
+                        resolver_coordinate => 'system',
+                        template_dir => $template_dir,
+                        to_dir => $to_dir
                     }
                 }
             }
@@ -244,6 +191,6 @@ SKIP: {
     my $base_file = File::Spec->catfile($base_dir, $base_name);
     spurt('bar', $base_file);
     $overlay->initialize();
-    is(slurp($to_file), "hostname=[$hostname]", 'initialize template');
-    is(slurp($base_file), "bar", 'initialize base');
+    is(slurp($to_file), "hostname=[$hostname]", 'non-local initialize template');
+    is(slurp($base_file), "bar", 'non-local initialize base');
 }

@@ -37,18 +37,16 @@ eval {
 my $logger = Log::Any->get_logger();
 my $test_dir = dirname(File::Spec->rel2abs($0));
 
-sub entities {
+sub factory {
     my ($name, $to_dir, %resources) = @_;
 
-    return Config::Entities->new({
-        entity => {
-            $name => {
-                deployment => {
-                    clean => ["$to_dir/"],
-                    hostname => 'localhost',
-                    resources => \%resources,
-                    to_dir => $to_dir,
-                }
+    return Footprintless::Util::factory({
+        $name => {
+            deployment => {
+                clean => ["$to_dir/"],
+                hostname => 'localhost',
+                resources => \%resources,
+                to_dir => $to_dir,
             }
         }
     });
@@ -73,7 +71,7 @@ sub temp_dirs {
     my $to_bazwar = File::Spec->catfile($to_dir, 'baz.war');
 
     my $deployment = Footprintless::Deployment->new(
-        entities('foo', $to_dir, bar => $barwar, baz => $bazwar),
+        factory('foo', $to_dir, bar => $barwar, baz => $bazwar),
         'foo.deployment');
     $deployment->deploy();
 
@@ -105,7 +103,7 @@ SKIP: {
     my $to_bazwar = File::Spec->catfile($to_dir, 'baz.war');
 
     my $deployment = Footprintless::Deployment->new(
-        entities('foo', $to_dir, bar => $barwar, baz => $bazwar),
+        factory('foo', $to_dir, bar => $barwar, baz => $bazwar),
         'foo.deployment',
         localhost => Footprintless::Localhost->new(none => 1));
     $deployment->deploy();
@@ -130,7 +128,7 @@ SKIP: {
     my $to_bazwar = File::Spec->catfile($to_local_dir, 'baz.war');
 
     my $deployment = Footprintless::Deployment->new(
-        entities('foo', $to_dir, bar => $barwar, baz => $bazwar),
+        factory('foo', $to_dir, bar => $barwar, baz => $bazwar),
         'foo.deployment');
     $deployment->deploy(rebase => {'from' => $to_dir, to => $to_local_dir});
     ok(is_empty_dir($to_dir), 'to_local_dir to is clean');
@@ -150,7 +148,7 @@ SKIP: {
     my $to_foobazwar = File::Spec->catfile($to_dir, 'foobaz.war');
 
     my $deployment = Footprintless::Deployment->new(
-        entities('foo', $to_dir, 
+        factory('foo', $to_dir, 
             bar => {
                 url => $barwar,
                 'as' => 'foobar.war'

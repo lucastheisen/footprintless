@@ -61,8 +61,8 @@ sub execute {
         }
     };
     if ($@) {
-        if (ref($@) && ($@->isa('Footprintless::InvalidEntityException'))
-            || $@->isa('Footprintless::App::UsageException')) {
+        if (ref($@) && ($@->isa('Footprintless::InvalidEntityException')
+            || $@->isa('Footprintless::App::UsageException'))) {
             $self->usage_error($@);
         }
         exit_due_to($@, 1);

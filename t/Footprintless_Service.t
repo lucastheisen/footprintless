@@ -5,6 +5,9 @@ use lib 't/lib';
 
 use Config::Entities;
 use Footprintless::CommandRunner::Mock;
+use Footprintless::Util qw(
+    factory
+);
 use Test::More tests => 22;
 
 BEGIN {use_ok('Footprintless::Service')}
@@ -29,17 +32,15 @@ my $command_runner = Footprintless::CommandRunner::Mock->new(
 
 {
     my $service = Footprintless::Service->new(
-        Config::Entities->new({
-            entity => {
+        factory(
+            {
                 service => {
                     command => '/opt/foo/bar.sh',
                     pid_file => '/var/run/bar/bar.pid'
                 }
-            }
-        }),
-        'service',
-        command_runner => $command_runner
-        );
+            },
+            command_runner => $command_runner),
+        'service');
     $service->start();
     is($command_runner->get_command(), '/opt/foo/bar.sh start', 'start');
     $service->status();
@@ -54,8 +55,8 @@ my $command_runner = Footprintless::CommandRunner::Mock->new(
 
 {
     my $service = Footprintless::Service->new(
-        Config::Entities->new({
-            entity => {
+        factory(
+            {
                 service => {
                     actions => {
                         kill => {command_args => "stop -kill"},
@@ -66,11 +67,9 @@ my $command_runner = Footprintless::CommandRunner::Mock->new(
                     command => '/opt/foo/bar.sh',
                     pid_file => '/var/run/bar/bar.pid'
                 }
-            }
-        }),
-        'service',
-        command_runner => $command_runner
-        );
+            },
+            command_runner => $command_runner),
+        'service');
     $service->start();
     is($command_runner->get_command(), '/opt/foo/bar.sh start -debug', 'start -debug');
     $service->status();
@@ -83,8 +82,8 @@ my $command_runner = Footprintless::CommandRunner::Mock->new(
 
 {
     my $service = Footprintless::Service->new(
-        Config::Entities->new({
-            entity => {
+        factory(
+            {
                 service => {
                     command => '/opt/foo/bar.sh',
                     actions => {
@@ -95,11 +94,9 @@ my $command_runner = Footprintless::CommandRunner::Mock->new(
                     },
                     pid_file => '/var/run/bar/bar.pid'
                 }
-            }
-        }),
-        'service',
-        command_runner => $command_runner
-        );
+            },
+            command_runner => $command_runner),
+        'service');
     eval {$service->start()};
     is($@->get_message(), 'use_pid not supported for [start]', 'use_pid start');
     $service->status();
@@ -114,8 +111,8 @@ my $command_runner = Footprintless::CommandRunner::Mock->new(
 
 {
     my $service = Footprintless::Service->new(
-        Config::Entities->new({
-            entity => {
+        factory(
+            {
                 service => {
                     command => '/opt/foo/bar.sh',
                     actions => {
@@ -126,10 +123,9 @@ my $command_runner = Footprintless::CommandRunner::Mock->new(
                     },
                     pid_file => '/var/run/bar/bar.pid'
                 }
-            }
-        }),
+            },
+            command_runner => $command_runner),
         'service',
-        command_runner => $command_runner
         );
     $service->start();
     is($command_runner->get_command(), '/foo/start', '/foo/start');
@@ -145,8 +141,8 @@ my $command_runner = Footprintless::CommandRunner::Mock->new(
     my $command_options_factory = Footprintless::CommandOptionsFactory->new(
         default_ssh => 'ssh');
     my $service = Footprintless::Service->new(
-        Config::Entities->new({
-            entity => {
+        factory(
+            {
                 hostname => 'bar',
                 sudo_username => 'foobar',
                 service => {
@@ -154,12 +150,10 @@ my $command_runner = Footprintless::CommandRunner::Mock->new(
                     command => '/opt/foo/bar.sh',
                     pid_file => '/var/run/bar/bar.pid'
                 }
-            }
-        }),
-        'service',
-        command_runner => $command_runner,
-        command_options_factory => $command_options_factory
-        );
+            },
+            command_runner => $command_runner,
+            command_options_factory => $command_options_factory),
+        'service');
     $service->start();
     is($command_runner->get_command(), 'ssh bar "sudo -u foobar /opt/foo/bar.sh start"', 'ssh sudo start');
     $service->status();

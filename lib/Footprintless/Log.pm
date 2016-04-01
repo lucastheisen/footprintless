@@ -13,7 +13,10 @@ use Footprintless::Command qw(
 );
 use Footprintless::CommandOptionsFactory;
 use Footprintless::Localhost;
-use Footprintless::Util qw(invalid_entity);
+use Footprintless::Util qw(
+    dumper
+    invalid_entity
+);
 use Log::Any;
 
 my $logger = Log::Any->get_logger();
@@ -82,37 +85,11 @@ sub head {
 }
 
 sub _init {
-    my ($self, $entity, $coordinate, %options) = @_;
-    $logger->tracef("entity=[%s]\ncoordinate=[%s]\noptions=[%s]",
-        $entity, $coordinate, \%options);
+    my ($self, $factory, $coordinate, %options) = @_;
+    $logger->tracef("coordinate=[%s]\noptions=[%s]", $coordinate, \%options);
 
-    $self->{entity} = $entity;
-    $self->{spec} = $entity->get_entity($coordinate);
-    if ($options{command_runner}) {
-        $self->{command_runner} = $options{command_runner};
-    }
-    else {
-        require Footprintless::CommandRunner::IPCRun;
-        $self->{command_runner} = 
-            Footprintless::CommandRunner::IPCRun->new();
-    }
-    $self->{localhost} = $options{localhost}
-        || Footprintless::Localhost->new()->load_all();
-    $self->{command_options_factory} = $options{command_options_factory}
-        || Footprintless::CommandOptionsFactory->new(
-            localhost => $self->{localhost});
-
-    $self->{command_options} = $self->{command_options_factory}
-        ->command_options(%{
-            $entity->fill($coordinate,
-                {
-                    hostname => undef,
-                    ssh => undef,
-                    ssh_username => undef,
-                    sudo_username => undef
-                },
-                ancestry => 1)
-        });
+    $self->{entity} = $factory->entities();
+    $self->{spec} = $self->{entity}->get_entity($coordinate);
 
     # Allow string, hashref with file key, or object
     my $ref = ref($self->{spec});
@@ -137,6 +114,19 @@ sub _init {
     else {
         $self->{log_file} = $self->{spec};
     }
+
+    $self->{factory} = $factory;
+    $self->{command_runner} = $factory->command_runner();
+    $self->{command_options} = $factory->command_options(%{
+            $self->{entity}->fill($coordinate,
+                {
+                    hostname => undef,
+                    ssh => undef,
+                    ssh_username => undef,
+                    sudo_username => undef
+                },
+                ancestry => 1)
+        });
 
     return $self;
 }

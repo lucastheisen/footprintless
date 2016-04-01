@@ -1,9 +1,12 @@
 use strict;
 use warnings;
 
+use lib 't/lib';
+
 use File::Spec;
 use File::Temp;
-use Test::More tests => 4;
+use Footprintless::CommandRunner::Mock;
+use Test::More tests => 5;
 
 BEGIN {use_ok('Footprintless::Util')}
 
@@ -42,3 +45,14 @@ is(Footprintless::Util::slurp($slurp_file),
 like(Footprintless::Util::dumper({foo=>'bar'}),
     qr/^\s*\$VAR1\s+=\s+\{\s+'foo'\s+=>\s+'bar'\s+\};\s*$/s,
     'dumper');
+
+if (1) {
+    $logger->debug('test clean');
+    my @call_stack = ();
+    my $command_runner = Footprintless::CommandRunner::Mock->new(
+        sub { push(@call_stack, \@_); return 0; });
+    Footprintless::Util::clean(['foo', 'bar/'], command_runner => $command_runner);
+    is(pop(@call_stack)->[0], 
+        'bash -c "rm -rf \"bar/\";rm -f \"foo\"";mkdir -p "bar/"', 
+        'clean one file one dir');
+}

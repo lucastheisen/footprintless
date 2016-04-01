@@ -8,22 +8,59 @@ package Footprintless::Util;
 
 use Carp;
 use Exporter qw(import);
+use Log::Any;
 
 our @EXPORT_OK = qw(
     agent
+    clean
     default_command_runner
     dumper
     exit_due_to
+    extract
+    factory
     invalid_entity
+    resource_manager
+    rebase
     slurp
     spurt
+    temp_dir
 );
+
+my $logger = Log::Any->get_logger();
 
 sub agent {
     require LWP::UserAgent;
     my $agent = LWP::UserAgent->new();
     $agent->env_proxy();
     return $agent;
+}
+
+sub clean {
+    my ($paths, %options) = @_;
+
+    if ($paths && ref($paths) eq 'ARRAY' && scalar(@$paths)) {
+        $logger->debugf("cleaning %s", $paths);
+        my $command_runner = $options{command_runner} 
+            || default_command_runner();
+
+        my @all_paths = $options{rebase}
+            ? map {rebase($_, $options{rebase})} @$paths
+            : @$paths;
+        my @dir_paths = map {($_ =~  /\/\s*$/) ? $_ : ()} @all_paths;
+
+        require Footprintless::Command;
+        eval {
+            $command_runner->run_or_die(
+                Footprintless::Command::batch_command(
+                    Footprintless::Command::rm_command(@all_paths),
+                    Footprintless::Command::mkdir_command(@dir_paths),
+                    $options{command_options}));
+        };
+        if ($@) {
+            $logger->errorf('clean failed: %s', $@);
+            croak($@);
+        }
+    }
 }
 
 sub default_command_runner {
@@ -51,9 +88,96 @@ sub exit_due_to {
     }
 }
 
+sub extract {
+    my ($archive, %options) = @_;
+
+    my @to = $options{to} ? (to => $options{to}) : ();
+    my @type = ();
+    if ($options{type}) {
+        push(@type, type => $options{type});
+    }
+    elsif ($archive =~ /\.war|\.jar|\.ear|\.twbx$/) {
+        # other known zip type extensions
+        push(@type, type => 'zip');
+    }
+
+    if (require Archive::Extract::Libarchive) {
+        Archive::Extract::Libarchive
+            ->new(archive => $archive, @type)
+            ->extract(@to)
+            || croak("unable to extract $archive: $!");
+    }
+    elsif (require Archive::Extract) {
+        Archive::Extract
+            ->new(archive => $archive, @type)
+            ->extract(@to)
+            || croak("unable to extract $archive: $!");
+    }
+    else {
+        # todo: consider binary commands like unzip and tar 
+        croak("extract requires either Archive::Extract::Libarchive or Archive::Extract");
+    }
+}
+
+sub factory {
+    my ($entities, @options) = @_;
+
+    if (ref($entities) eq 'HASH') {
+        require Config::Entities;
+        $entities = Config::Entities->new({entity => $entities});
+    }
+
+    my $factory;
+    my $factory_module = $entities->get_entity('fpl.factory');
+    if ($entities->get_entity('fpl.factory')) {
+        my $factory_module_path = $factory_module;
+        $factory_module_path =~ s/::/\//;
+        require "$factory_module_path.pm"; ## no critic
+        $factory = $factory_module->new($entities, @options);
+    }
+    else {
+        require Footprintless::Factory;
+        $factory = Footprintless::Factory->new($entities, @options);
+    }
+
+    return $factory;
+}
+
 sub invalid_entity {
     require Footprintless::InvalidEntityException;
     die(Footprintless::InvalidEntityException->new(@_));
+}
+
+sub rebase {
+    my ($path, $rebase) = @_;
+
+    my $rebased;
+    if ($path =~ /^$rebase->{from}(.*)$/) {
+        $rebased = "$rebase->{to}$1";
+    }
+    else {
+        croak("invalid rebase $path from $rebase->{from} to $rebase->{to}");
+    }
+
+    return $rebased;
+}
+
+sub resource_manager {
+    my ($agent) = @_;
+    $agent ||= agent();
+
+    my @providers = ();
+    if (require Maven::Agent) {
+        require Footprintless::Resource::MavenProvider;
+        push(@providers, Footprintless::Resource::MavenProvider->new(
+            Maven::Agent->new(agent => $agent)));
+    }
+
+    require Footprintless::ResourceManager;
+    require Footprintless::Resource::UrlProvider;
+    return Footprintless::ResourceManager->new(
+        @providers, 
+        Footprintless::Resource::UrlProvider->new($agent));
 }
 
 sub slurp {
@@ -71,31 +195,40 @@ sub spurt {
     close($handle);
 }
 
+sub temp_dir {
+    require File::Temp;
+    File::Temp->safe_level(File::Temp::HIGH());
+    return File::Temp->newdir();
+}
+
 1;
 
 __END__
 =head1 SYNOPSIS
 
-  use Footprintless::Util qw(
-      agent
-      default_command_runner
-      dumper
-      exit_due_to
-      slurp
-      spurt
-  );
+    use Footprintless::Util qw(
+        agent
+        clean
+        default_command_runner
+        dumper
+        exit_due_to
+        extract
+        resource_manager
+        slurp
+        spurt
+        temp_dir
+    );    
 
-  my $agent = agent();
-  my $command_runner = default_command_runner();
-  my $dumper = dumper();
-  
-  eval {
-      $command_runner->run_or_die('cat /foo/bar');
-  };
-  exit_due_to($@) if ($@);
-
-  my $content = slurp('/foo/bar');
-  spurt('baz', '/foo/bar', append => 1);
+    my $agent = agent();
+    my $command_runner = default_command_runner();
+    my $dumper = dumper();
+    
+    eval {
+        $command_runner->run_or_die('cat /foo/bar');
+    };
+    exit_due_to($@) if ($@);    
+    my $content = slurp('/foo/bar');
+    spurt('baz', '/foo/bar', append => 1);
 
 =head1 DESCRIPTION
 
@@ -104,6 +237,11 @@ This module contains common utility methods used by Footprintless.
 =func agent()
 
 Returns a new instance of C<LWP::UserAgent> configured with C<env_proxy>.
+
+=func clean($paths, %options)
+
+Removes all the entries in C<$paths> (must be an array ref).  If an entry ends
+with a C</> it is assumed to be a directory, and will be recreated.
 
 =func default_command_runner()
 
@@ -123,9 +261,36 @@ will be called.  Otherwise, C<$reason> will be printed to C<STDERR> and
 C<exit(255)> will be called.  The C<$verbose> argument will be passed on
 thusly: C<$reason-E<gt>exit($verbose)>.
 
-=fund invalid_entity($message, $coordinate)
+=func extract($archive, %options)
+
+Will extract C<$archive>.  Will attempt to use L<Archive::Extract::Libarchive>
+and if not found, will use L<Archive::Extract>.  The available options are:
+
+=over 4
+
+=item to
+
+The location to extract to.  Defaults to L<cwd|Cwd/cwd>.
+
+=item type
+
+The type of the archive.  If not specified, the type will be inferred by
+the file extension according to L<Lib::Archive>.  The following additional
+extensions will be inferred as type C<zip>: C<ear>, C<jar>, C<twbx>, C<war>.
+
+=back
+
+=func invalid_entity($message, $coordinate)
 
 Dies with an instance of L<Footprintless::InvalidEntityException>.
+
+=func resource_manager($agent)
+
+Returns a new instance of C<Footprintless::ResourceManager> configured with 
+a L<maven provider|Footprintless::Resource::MavenProvider> if C<Maven::Agent> 
+is available, and a L<url provider|Footprintless::Resource::UrlProvider> 
+in that order.  If C<$agent> is provided, it will be passed on to the 
+providers.
 
 =func slurp($file)
 
@@ -134,6 +299,11 @@ Reads the entire contents of C<$file> in one gulp.
 =func spurt($content, $file, %options)
 
 Writes C<$content> to C<$file>.  The available options are:
+
+=func temp_dir()
+
+Creates a new temporary directory with C<safe_level> set to 
+C<HIGH>.  Returns the new L<File::Temp> object.
 
 =over 4
 

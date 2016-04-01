@@ -12,6 +12,7 @@ use Footprintless::Localhost;
 use Footprintless::Util qw(
     default_command_runner 
     dumper 
+    factory
     slurp 
     spurt
 );
@@ -42,15 +43,14 @@ my $command_runner = Footprintless::CommandRunner::Mock->new(
 my $file = '/foo/bar/baz.log';
 {
     my $log = Footprintless::Log->new(
-        Config::Entities->new({
-            entity => {
+        factory(
+            {
                 logs => {
                     foo => $file
                 }
-            }
-        }),
-        'logs.foo',
-        command_runner => $command_runner);
+            },
+            command_runner => $command_runner),
+        'logs.foo');
     $log->cat();
     is($command_runner->get_command(), "cat $file", 'cat');
     $log->cat(args => ['-n 5']);
@@ -67,16 +67,16 @@ my $file = '/foo/bar/baz.log';
 
 {
     my $log = Footprintless::Log->new(
-        Config::Entities->new({
-            entity => {
+        factory(
+            {
                 hostname => 'foo.example.com',
                 logs => {
                     foo => $file
                 },
                 ssh => 'ssh -t -t -q',
                 sudo_username => 'foouser'
-            }
-        }),
+            },
+            command_runner => $command_runner),
         'logs.foo',
         command_runner => $command_runner);
     $log->cat();
@@ -124,11 +124,9 @@ my $file = '/foo/bar/baz.log';
     $logger->debug("started parent");
     my (@out);
     Footprintless::Log->new(
-        Config::Entities->new({
-            entity => {
-                logs => {
-                    foo => $file->filename()
-                }
+        factory({
+            logs => {
+                foo => $file->filename()
             }
         }),
         'logs.foo')

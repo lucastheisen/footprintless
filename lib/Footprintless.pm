@@ -8,7 +8,7 @@ package Footprintless;
 
 use Carp;
 use Config::Entities;
-use Footprintless::Util;
+use Footprintless::Util qw(factory);
 use Log::Any;
 
 our $AUTOLOAD;
@@ -120,18 +120,8 @@ sub _init {
                 \@config_dirs, {@config_options});
             $entities = Config::Entities->new(@config_dirs, {@config_options});
         }
-
-        my $factory_module = $entities->get_entity('fpl.factory');
-        if ($entities->get_entity('fpl.factory')) {
-            my $factory_module_path = $factory_module;
-            $factory_module_path =~ s/::/\//;
-            require "$factory_module_path.pm";
-            $self->{factory} = $factory_module->new($entities);
-        }
-        else {
-            require Footprintless::Factory;
-            $self->{factory} = Footprintless::Factory->new($entities);
-        }
+        
+        $self->{factory} = factory($entities);
     }
 
     return $self;
@@ -145,6 +135,11 @@ sub localhost {
 sub log {
     my ($self, @args) = @_;
     $self->{factory}->log(@args);
+}
+
+sub plugins {
+    my ($self) = @_;
+    $self->{factory}->plugins();
 }
 
 sub overlay {
