@@ -6,7 +6,11 @@ use lib 't/lib';
 use App::Cmd::Tester;
 use Data::Dumper;
 use Footprintless;
-use Footprintless::Util qw(slurp spurt);
+use Footprintless::Util qw(
+    dumper
+    slurp
+    spurt
+);
 use File::Basename;
 use File::Path qw(make_path);
 use File::Spec;
@@ -61,12 +65,12 @@ sub footprintless {
 }
 
 sub match {
-    my ($file, $footprintless, $coordinate) = @_;
+    my ($file, $footprintless, $coordinate, $action) = @_;
 
     my $overlay = $footprintless->entities()->get_entity($coordinate);
     my $got_file = File::Spec->catdir(
         File::Spec->catdir($overlay->{to_dir}, $file));
-    ok(-f $got_file, "$file is file");
+    ok(-f $got_file, "$action: $file is file");
 
     my $original_content;
     my $original_file = File::Spec->catdir(
@@ -93,7 +97,7 @@ sub match {
     }
 
     $logger->debugf('checking %s', $got_file);
-    is(slurp($got_file), $original_content, "$file matches expected");
+    is(slurp($got_file), $original_content, "$action: $file matches expected");
 }
 
 sub test_overlay {
@@ -136,20 +140,19 @@ my $coordinate = 'dev.foo.overlay';
 test_overlay($coordinate, undef,
     validator => sub {
         my ($footprintless) = @_;
-
-        match('bin/catalina.sh', $footprintless, $coordinate);
-        match('bin/setenv.sh', $footprintless, $coordinate);
-        match('conf/jndi-resources.xml', $footprintless, $coordinate);
-        match('conf/server.xml', $footprintless, $coordinate);
+        match('bin/catalina.sh', $footprintless, $coordinate, 'undef');
+        match('bin/setenv.sh', $footprintless, $coordinate, 'undef');
+        match('conf/jndi-resources.xml', $footprintless, $coordinate, 'undef');
+        match('conf/server.xml', $footprintless, $coordinate, 'undef');
     });
 
 test_overlay($coordinate, 'initialize',
     validator => sub {
         my ($footprintless) = @_;
 
-        match('bin/catalina.sh', $footprintless, $coordinate);
-        match('bin/setenv.sh', $footprintless, $coordinate);
-        match('conf/jndi-resources.xml', $footprintless, $coordinate);
-        match('conf/server.xml', $footprintless, $coordinate);
-        match('conf/catalina.properties', $footprintless, $coordinate);
+        match('bin/catalina.sh', $footprintless, $coordinate, 'initialize');
+        match('bin/setenv.sh', $footprintless, $coordinate, 'initialize');
+        match('conf/jndi-resources.xml', $footprintless, $coordinate, 'initialize');
+        match('conf/server.xml', $footprintless, $coordinate, 'initialize');
+        match('conf/catalina.properties', $footprintless, $coordinate, 'initialize');
     });

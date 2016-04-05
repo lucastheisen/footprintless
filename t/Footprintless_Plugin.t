@@ -7,7 +7,7 @@ use Footprintless;
 use Footprintless::Util qw(
     dumper
 );
-use Test::More tests => 5;
+use Test::More tests => 6;
 
 BEGIN {use_ok('Footprintless::Plugin')}
 
@@ -38,6 +38,7 @@ my $footprintless = Footprintless->new(entities => {
             }
         }
     });
+ok($footprintless->echo('a.b'), 'got an echo');
 is($footprintless->echo('a.b')->echo('foo'), 'bar', 'foo echoed bar');
 is($footprintless->plugins(), 1, 'one registered plugin');
 is(ref(($footprintless->plugins())[0]), 'Footprintless::Test::EchoPlugin', 

@@ -94,6 +94,7 @@ sub _init {
 sub _push_to_destination {
     my ($self, $temp_dir, $status) = @_;
 
+    $logger->debug("pushing to destination");
     $self->{command_runner}->run_or_die(
         cp_command(
             $temp_dir, 

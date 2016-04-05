@@ -10,6 +10,7 @@ use Carp;
 use Footprintless::Util;
 use Log::Any;
 
+our $AUTOLOAD;
 my $logger = Log::Any->get_logger();
 
 sub new {
@@ -24,6 +25,19 @@ sub agent {
     }
 
     return $self->{agent};
+}
+
+sub AUTOLOAD {
+    my ($self, @args) = @_;
+    my $method_name = $AUTOLOAD;
+    $method_name =~ s/.*:://;
+    foreach my $plugin ($self->plugins()) {
+        my $method = $plugin->factory_methods()->{$method_name};
+        if ($method) {
+            return &$method($self, @args);
+        }
+    }
+    croak("unsupported factory method: [$method_name]");
 }
 
 sub command_options {
@@ -125,17 +139,19 @@ sub register_plugin {
     my ($self, $plugin) = @_;
 
     push(@{$self->{plugins}}, $plugin);
-
+if (0) {
     my $factory_methods = $plugin->factory_methods();
     if ($factory_methods) {
         foreach my $factory_method_name (keys(%$factory_methods)) {
             my $method = ref($self) . "::$factory_method_name";
+            $logger->debugf('registering factory method %s', $method);
             no strict 'refs';
             *$method = sub {
                 &{$factory_methods->{$factory_method_name}}(@_);
             }
         }
     }
+}
 }
 
 sub resource_manager {
