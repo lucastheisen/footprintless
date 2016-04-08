@@ -17,7 +17,7 @@ use Footprintless::Util qw(
 use Footprintless::Test::Util qw(
     is_empty_dir
 );
-use Test::More tests => 22;
+use Test::More tests => 26;
 
 BEGIN {use_ok('Footprintless::Deployment')}
 
@@ -38,13 +38,14 @@ my $logger = Log::Any->get_logger();
 my $test_dir = dirname(File::Spec->rel2abs($0));
 
 sub factory {
-    my ($name, $to_dir, %resources) = @_;
+    my ($name, $to_dir, $resource_dir, %resources) = @_;
 
     return Footprintless::Util::factory({
         $name => {
             deployment => {
                 clean => ["$to_dir/"],
                 hostname => 'localhost',
+                ($resource_dir ? (resource_dir => $resource_dir) : ()),
                 resources => \%resources,
                 to_dir => $to_dir,
             }
@@ -71,7 +72,7 @@ sub temp_dirs {
     my $to_bazwar = File::Spec->catfile($to_dir, 'baz.war');
 
     my $deployment = Footprintless::Deployment->new(
-        factory('foo', $to_dir, bar => $barwar, baz => $bazwar),
+        factory('foo', $to_dir, undef, bar => $barwar, baz => $bazwar),
         'foo.deployment');
     $deployment->deploy();
 
@@ -103,7 +104,7 @@ SKIP: {
     my $to_bazwar = File::Spec->catfile($to_dir, 'baz.war');
 
     my $deployment = Footprintless::Deployment->new(
-        factory('foo', $to_dir, bar => $barwar, baz => $bazwar),
+        factory('foo', $to_dir, undef, bar => $barwar, baz => $bazwar),
         'foo.deployment',
         localhost => Footprintless::Localhost->new(none => 1));
     $deployment->deploy();
@@ -128,14 +129,14 @@ SKIP: {
     my $to_bazwar = File::Spec->catfile($to_local_dir, 'baz.war');
 
     my $deployment = Footprintless::Deployment->new(
-        factory('foo', $to_dir, bar => $barwar, baz => $bazwar),
+        factory('foo', $to_dir, undef, bar => $barwar, baz => $bazwar),
         'foo.deployment');
     $deployment->deploy(rebase => {'from' => $to_dir, to => $to_local_dir});
     ok(is_empty_dir($to_dir), 'to_local_dir to is clean');
 
-    ok(-f $to_barwar, 'bar deployed');
+    ok(-f $to_barwar, 'to_local_dir bar deployed');
     is(slurp($to_barwar), slurp($barwar), 'to_local_dir bar is bar');
-    ok(-f $to_bazwar, 'baz deployed');
+    ok(-f $to_bazwar, 'to_local_dir baz deployed');
     is(slurp($to_bazwar), slurp($bazwar), 'to_local_dir baz is baz');
 }
 
@@ -148,7 +149,7 @@ SKIP: {
     my $to_foobazwar = File::Spec->catfile($to_dir, 'foobaz.war');
 
     my $deployment = Footprintless::Deployment->new(
-        factory('foo', $to_dir, 
+        factory('foo', $to_dir, undef, 
             bar => {
                 url => $barwar,
                 'as' => 'foobar.war'
@@ -164,4 +165,33 @@ SKIP: {
     is(slurp($to_foobarwar), slurp($barwar), 'foobar is bar');
     ok(-f $to_foobazwar, 'foobaz deployed');
     is(slurp($to_foobazwar), slurp($bazwar), 'foobaz is baz');
+}
+
+{
+    $logger->info("test resource_dir");
+    my ($temp_dir, $to_dir) = temp_dirs();
+    my $resource_dir = 'foo/bar';
+
+    my $barwar = File::Spec->catfile($test_dir, 'data', 'resources', 'bar.war');
+    my $to_foobarwar = File::Spec->catfile($to_dir, $resource_dir, 'foobar.war');
+    my $bazwar = File::Spec->catfile($test_dir, 'data', 'resources', 'baz.war');
+    my $to_foobazwar = File::Spec->catfile($to_dir, $resource_dir, 'foobaz.war');
+
+    my $deployment = Footprintless::Deployment->new(
+        factory('foo', $to_dir, $resource_dir, 
+            bar => {
+                url => $barwar,
+                'as' => 'foobar.war'
+            }, 
+            baz => {
+                url => $bazwar,
+                'as' => 'foobaz.war'
+            }),
+        'foo.deployment');
+    $deployment->deploy();
+
+    ok(-f $to_foobarwar, 'resource_dir foobar deployed');
+    is(slurp($to_foobarwar), slurp($barwar), 'resource_dir foobar is bar');
+    ok(-f $to_foobazwar, 'resource_dir foobaz deployed');
+    is(slurp($to_foobazwar), slurp($bazwar), 'resource_dir foobaz is baz');
 }

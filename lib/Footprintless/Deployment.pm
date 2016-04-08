@@ -7,6 +7,9 @@ package Footprintless::Deployment;
 # PODNAME: Footprintless::Deployment
 
 use Carp;
+use File::Path qw(
+    make_path
+);
 use File::Temp;
 use Footprintless::Command qw(
     batch_command
@@ -53,11 +56,16 @@ sub deploy {
         $to_dir = $is_local ? $self->{spec}{to_dir} : temp_dir();
     }
 
+    my $resource_dir = $self->{spec}{resource_dir}
+        ? File::Spec->catdir($to_dir, $self->{spec}{resource_dir})
+        : $to_dir;
+    make_path($resource_dir);
+
     my @names = $options{names}
         ? @{$options{names}}
         : keys(%{$self->{spec}{resources}});
 
-    $logger->debugf("deploy %s to %s", \@names, $to_dir);
+    $logger->debugf("deploy %s to %s", \@names, $resource_dir);
     my $resource_manager = $self->{factory}->resource_manager();
     foreach my $name (@names) {
         my $resource_spec = $self->{spec}{resources}{$name};
@@ -65,14 +73,14 @@ sub deploy {
         croak("unknown resource $name") unless ($resource);
 
         my $to = ref($resource_spec) && $resource_spec->{as} 
-            ? File::Spec->catfile($to_dir, $resource_spec->{as})
-            : $to_dir;
+            ? File::Spec->catfile($resource_dir, $resource_spec->{as})
+            : $resource_dir;
         $logger->tracef("download %s to '%s'", $resource, $to);
         $resource_manager->download($resource, to => $to);
     }
-    $logger->debug("deploy complete");
 
     $self->_push_to_destination($to_dir, $options{status}) unless ($is_local);
+    $logger->debug("deploy complete");
 }
 
 sub _init {
