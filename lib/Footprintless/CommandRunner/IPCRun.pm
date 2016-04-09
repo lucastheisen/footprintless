@@ -45,25 +45,34 @@ sub _run {
             $self->_run_options($runner_options));
 
         my ($last_part_out, $last_part_err) = ('', '');
-        while ($harness->pump()) {
-            if ($out_callback) {
-                my @lines = split(/\r?\n/, $last_part_out . $out, -1);
-                $last_part_out = pop(@lines) || '';
-                &$out_callback($_) foreach (@lines);
-                $out = '';
+        eval {
+            while ($harness->pump()) {
+                if ($out_callback) {
+                    my @lines = split(/\r?\n/, $last_part_out . $out, -1);
+                    $last_part_out = pop(@lines) || '';
+                    &$out_callback($_) foreach (@lines);
+                    $out = '';
+                }
+
+                if ($err_callback) {
+                    my @lines = split(/\r?\n/, $last_part_err . $err, -1);
+                    $last_part_err = pop(@lines) || '';
+                    &$err_callback($_) foreach (@lines);
+                    $err = '';
+                }
             }
 
-            if ($err_callback) {
-                my @lines = split(/\r?\n/, $last_part_err . $err, -1);
-                $last_part_err = pop(@lines) || '';
-                &$err_callback($_) foreach (@lines);
-                $err = '';
-            }
+            &$out_callback($last_part_out) 
+                if ($out_callback && length($last_part_out) > 0);
+            &$err_callback($last_part_err) 
+                if ($err_callback && length($last_part_err) > 0);
+        };
+        my $error = $@;
+        if ($error) {
+            $logger->debugf("callback exited early: %s", $error);
+            $harness->kill_kill();
+            die($error);
         }
-        &$out_callback($last_part_out) 
-            if ($out_callback && length($last_part_out) > 0);
-        &$err_callback($last_part_err) 
-            if ($err_callback && length($last_part_err) > 0);
     }
     else {
         IPC::Run::run(['sh', '-c', $command], 
