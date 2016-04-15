@@ -6,6 +6,8 @@ package Footprintless::Resource::Provider;
 # ABSTRACT: A contract for providing resources to the resource manager
 # PODNAME: Footprintless::Resource::Provider
 
+use Carp;
+
 sub new {
     return bless({}, shift)->_init(@_);
 }
@@ -14,12 +16,10 @@ sub download {
     my ($self, $resource, @options) = @_;
 
     my $ref = ref($resource);
-    if (!$resource->isa('Footprintless::Resource')) {
-        if ($ref) {
-            croak("invalid resource [$ref]");
-        }
-        $resource = $self->resource($resource);
-    }
+    $resource = $self->resource($resource) if (!$ref || $ref eq 'HASH');
+
+    croak("invalid resource [$resource]") 
+        unless ($resource->isa('Footprintless::Resource'));
 
     return $self->_download($resource, @options);
 }

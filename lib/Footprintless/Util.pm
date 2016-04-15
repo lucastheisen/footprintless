@@ -128,8 +128,8 @@ sub factory {
     }
 
     my $factory;
-    my $factory_module = $entities->get_entity('fpl.factory');
-    if ($entities->get_entity('fpl.factory')) {
+    my $factory_module = $entities->get_entity('footprintless.factory');
+    if ($entities->get_entity('footprintless.factory')) {
         my $factory_module_path = $factory_module;
         $factory_module_path =~ s/::/\//;
         require "$factory_module_path.pm"; ## no critic
@@ -139,13 +139,16 @@ sub factory {
         require Footprintless::Factory;
         $factory = Footprintless::Factory->new($entities, @options);
     }
-
+    
     return $factory;
 }
 
 sub invalid_entity {
+    my ($coordinate, $message) = @_;
+
     require Footprintless::InvalidEntityException;
-    die(Footprintless::InvalidEntityException->new(@_));
+    die(Footprintless::InvalidEntityException->new(
+        $coordinate, $message || "$coordinate required"));
 }
 
 sub rebase {
@@ -280,9 +283,22 @@ extensions will be inferred as type C<zip>: C<ear>, C<jar>, C<twbx>, C<war>.
 
 =back
 
+=func factory($entities, %options)
+
+Creates a new L<Footprintless::Factory>.  C<$entities> can be either, a
+hashref, or a L<Config::Entities> object.  If a hashref, it will be 
+used to create a new entities object, then passed along with options to
+the C<Footprintless::Factory> constructor.
+
 =func invalid_entity($message, $coordinate)
 
 Dies with an instance of L<Footprintless::InvalidEntityException>.
+
+=func rebase($path, \%rebase)
+
+Replaces a portion of the start of C<$path>.  C<\%rebase> must have 2 keys,
+C<from> and C<to>.  The C<from> value will be removed from C<$path> and
+replaced with the C<to> value.
 
 =func resource_manager($agent)
 

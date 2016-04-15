@@ -48,7 +48,7 @@ sub footprintless {
         }
     }
     FOO
-    my $fpl = File::Spec->catfile($entities_dir, 'fpl.pm');
+    my $fpl = File::Spec->catfile($entities_dir, 'footprintless.pm');
     spurt(<<"    FPL", $fpl);
     return {
         factory => 'Footprintless::EchoCommandRunnerTestFactory'

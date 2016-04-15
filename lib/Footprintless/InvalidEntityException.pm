@@ -14,10 +14,10 @@ sub new {
 }
 
 sub _init {
-    my ($self, $message, $coordinate) = @_;
+    my ($self, $coordinate, $message) = @_;
 
-    $self->{message} = $message;
     $self->{coordinate} = $coordinate;
+    $self->{message} = $message;
     $self->{trace} = [];
 
     return $self;

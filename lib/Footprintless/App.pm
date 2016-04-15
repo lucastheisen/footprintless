@@ -6,13 +6,32 @@ package Footprintless::App;
 # ABSTRACT: The base application class for fpl
 # PODNAME: Footprintless::App
 
-# todo: remove after https://github.com/rjbs/App-Cmd/pull/60
-use lib '/home/ltheisen/git/lucastheisen-app-cmd/lib';
 use App::Cmd::Setup -app;
 use Footprintless;
 use Log::Any;
 
 my $logger = Log::Any->get_logger();
+
+# todo: remove after https://github.com/rjbs/App-Cmd/pull/60
+sub new {
+    my ($class, $arg) = @_;
+
+    my $arg0 = $0;
+    require File::Basename;
+    my $base = File::Basename::basename $arg0;
+
+    my $self = bless(
+        {
+            arg0         => $base,
+            full_arg0    => $arg0,
+            show_version => $arg->{show_version_cmd} || 0,
+        },
+        $class);
+
+    $self->{command} = $self->_command($arg);
+
+    return $self;
+}
 
 sub _configure_logging {
     my ($self, $level) = @_;
@@ -25,7 +44,6 @@ sub footprintless {
     my ($self) = @_;
 
     if (!defined($self->{footprintless})) {
-        $logger->warn("relying on lucastheisen-app-cmd/lib!!!!!!!!!");
         $self->{footprintless} = Footprintless->new();
     }
 
@@ -53,6 +71,7 @@ sub global_opt_spec {
 
 sub footprintless_plugin_search_paths {
     my ($self) = @_;
+print("REMOVE ME: WTF?\n");
 
     unless ($self->{plugin_search_paths}) {
         my @paths = ();
@@ -81,6 +100,8 @@ __END__
 =method footprintless()
 
 Returns the instance of C<Footprintless> for this instance of the app.
+
+=for Pod::Coverage get_command global_opt_spec footprintless_plugin_search_paths plugin_search_path
 
 =head1 SEE ALSO
 

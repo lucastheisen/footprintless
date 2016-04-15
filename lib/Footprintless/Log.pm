@@ -99,16 +99,16 @@ sub _init {
                 $self->{log_file} = $self->{spec}{file};
             }
             else {
-                invalid_entity("must be file, or hashref with 'file' key",
-                    $coordinate);
+                invalid_entity($coordinate,
+                    "must be file, or hashref with 'file' key");
             }
         }
         elsif ($ref eq 'SCALAR') {
             $self->{log_file} = $self->{spec};
         }
         else {
-            invalid_entity("must be file, or hashref with 'file' key",
-                $coordinate);
+            invalid_entity($coordinate, 
+                "must be file, or hashref with 'file' key");
         }
     }
     else {

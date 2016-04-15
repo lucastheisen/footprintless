@@ -41,8 +41,7 @@ sub _command {
             $action = $actions_spec->{command_args};
         }
         elsif ($actions_spec->{use_pid}) {
-            invalid_entity("pid_file or pid_command required for [$action]",
-                $self->{coordinate})
+            invalid_entity($self->{coordinate}, "pid_file or pid_command required for [$action]")
                 unless ($self->{spec}{pid_file} || $self->{spec}{pid_command});
 
             my $pid_file = $self->{spec}{pid_file};
@@ -64,13 +63,12 @@ sub _command {
                 )
             }
             else {
-                invalid_entity("use_pid not supported for [$action]",
-                    $self->{coordinate});
+                invalid_entity($self->{coordinate}, "use_pid not supported for [$action]");
             }
         }
     }
 
-    invalid_entity("no command specified for [$action]", $self->{coordinate}) 
+    invalid_entity($self->{coordinate}, "no command specified for [$action]") 
         unless ($command);
     return "$command $action";
 }
@@ -88,11 +86,11 @@ sub _init {
     my ($self, $factory, $coordinate, %options) = @_;
     $logger->tracef("coordinate=[%s]\noptions=[%s]", $coordinate, \%options);
 
-    $self->{entity} = $factory->entities();
-    $self->{coordinate} = $coordinate;
-    $self->{spec} = $self->{entity}->get_entity($coordinate);
-
     $self->{factory} = $factory;
+    $self->{coordinate} = $coordinate;
+
+    $self->{entity} = $factory->entities();
+    $self->{spec} = $self->{entity}->get_entity($coordinate);
     $self->{command_runner} = $factory->command_runner();
     $self->{command_options} = $factory->command_options(%{$self->{spec}});
 

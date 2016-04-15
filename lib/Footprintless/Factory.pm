@@ -139,19 +139,6 @@ sub register_plugin {
     my ($self, $plugin) = @_;
 
     push(@{$self->{plugins}}, $plugin);
-if (0) {
-    my $factory_methods = $plugin->factory_methods();
-    if ($factory_methods) {
-        foreach my $factory_method_name (keys(%$factory_methods)) {
-            my $method = ref($self) . "::$factory_method_name";
-            $logger->debugf('registering factory method %s', $method);
-            no strict 'refs';
-            *$method = sub {
-                &{$factory_methods->{$factory_method_name}}(@_);
-            }
-        }
-    }
-}
 }
 
 sub resource_manager {
@@ -186,6 +173,11 @@ Creates a new factory configured by C<$entities>.
 =method agent()
 
 Returns the L<agent|LWP::UserAgent> used by this instance. 
+
+=method command_options(%spec)
+
+Returns a C<Footprintless::Command::CommandOptions> object configured by
+C<%spec>.
 
 =method command_options_factory()
 
@@ -289,6 +281,15 @@ A C<resource_manager> to use instead of that which is supplied by
 this footprintless instance.
 
 =back
+
+=method plugins()
+
+Returns the registered plugins for this instance.
+
+=method register_plugin($plugin)
+
+Registers C<$plugin> with this instance.  C<$plugin> must be an instance
+of L<Footprintless::Plugin> or a subclass.
 
 =method resource_manager()
 

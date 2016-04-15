@@ -10,17 +10,12 @@ use Carp;
 use File::Path qw(
     make_path
 );
-use File::Temp;
-use Footprintless::Command qw(
-    batch_command
-    cp_command
-    mkdir_command
-    rm_command
-);;
-use Footprintless::CommandOptionsFactory;
-use Footprintless::Localhost;
-use Footprintless::ResourceManager;
-use Footprintless::Resource::UrlProvider;
+use Footprintless::Mixins qw (
+    _clean
+    _download
+    _resource
+    _sub_entity
+);
 use Footprintless::Util qw(
     agent
     rebase
@@ -35,51 +30,27 @@ sub new {
 }
 
 sub clean {
-    my ($self, %options) = @_;
-
-    Footprintless::Util::clean($self->{spec}{clean}, 
-        command_runner => $self->{command_runner},
-        command_options => $self->{command_options},
-        rebase => $options{rebase});
+    my ($self, @options) = @_;
+    $self->_clean(@options);
 }
 
 sub deploy {
     my ($self, %options) = @_;
-    my ($is_local, $to_dir);
+    my $resources = $self->_sub_entity('resources', 1);
 
-    if ($options{rebase}) {
-        $to_dir = rebase($self->{spec}{to_dir}, $options{rebase});
-        $is_local = 1;
-    }
-    else {
-        $is_local = $self->{localhost}->is_alias($self->{spec}{hostname});
-        $to_dir = $is_local ? $self->{spec}{to_dir} : temp_dir();
-    }
+    $self->_local_template(
+        sub {
+            my ($to_dir) = @_;
 
-    my $resource_dir = $self->{spec}{resource_dir}
-        ? File::Spec->catdir($to_dir, $self->{spec}{resource_dir})
-        : $to_dir;
-    make_path($resource_dir);
+            my @names = $options{names}
+                ? @{$options{names}}
+                : keys(%$resources);
 
-    my @names = $options{names}
-        ? @{$options{names}}
-        : keys(%{$self->{spec}{resources}});
+            $logger->debugf("deploy %s to %s", \@names, $to_dir);
+            $self->_download($resources->{$_}, $to_dir) foreach (@names);
+        },
+        rebase => $options{rebase});
 
-    $logger->debugf("deploy %s to %s", \@names, $resource_dir);
-    my $resource_manager = $self->{factory}->resource_manager();
-    foreach my $name (@names) {
-        my $resource_spec = $self->{spec}{resources}{$name};
-        my $resource = $resource_manager->resource($resource_spec);
-        croak("unknown resource $name") unless ($resource);
-
-        my $to = ref($resource_spec) && $resource_spec->{as} 
-            ? File::Spec->catfile($resource_dir, $resource_spec->{as})
-            : $resource_dir;
-        $logger->tracef("download %s to '%s'", $resource, $to);
-        $resource_manager->download($resource, to => $to);
-    }
-
-    $self->_push_to_destination($to_dir, $options{status}) unless ($is_local);
     $logger->debug("deploy complete");
 }
 
@@ -88,27 +59,27 @@ sub _init {
     $logger->tracef("coordinate=[%s]\noptions=[%s]",
         $coordinate, \%options);
 
-    $self->{entity} = $factory->entities();
-    $self->{spec} = $self->{entity}->get_entity($coordinate);
-
     $self->{factory} = $factory;
-    $self->{localhost} = $factory->localhost();
-    $self->{command_runner} = $factory->command_runner();
-    $self->{command_options} = $factory->command_options(%{$self->{spec}});
+    $self->{coordinate} = $coordinate;
 
     return $self;
 }
 
-sub _push_to_destination {
-    my ($self, $temp_dir, $status) = @_;
+sub _local_template {
+    my ($self, $local_work, @options) = @_;
+    $self->Footprintless::Mixins::_local_template(
+        sub {
+            my ($to_dir) = @_;
 
-    $logger->debug("pushing to destination");
-    $self->{command_runner}->run_or_die(
-        cp_command(
-            $temp_dir, 
-            $self->{spec}{to_dir}, 
-            $self->{command_options},
-            'status' => $status));
+            my $resource_dir = $self->_sub_entity('resource_dir');
+            $to_dir = $resource_dir
+                ? File::Spec->catdir($to_dir, $resource_dir)
+                : $to_dir;
+            make_path($to_dir);
+
+            &$local_work($to_dir);
+        },
+        @options);
 }
 
 1;
@@ -177,42 +148,9 @@ A more complex situation, perhaps a tomcat instance:
         to_dir => '/opt/tomcat/webapps'
     }
 
-=constructor new($entity, $coordinate, %options)
+=constructor new($entity, $coordinate)
 
 Constructs a new deployment configured by C<$entities> at C<$coordinate>.  
-The supported options are:
-
-=over 4
-
-=item agent
-
-If no C<resource_manager> is provided, then this value is used when 
-constructing the default provider(s) for the default resource manager.
-
-=item command_options_factory
-
-The command options factory to use.  Defaults to an instance of
-L<Footprintless::CommandOptionsFactory> using the C<localhost> instance
-of this object.
-
-=item command_runner
-
-The command runner to use.  Defaults to an instance of 
-L<Footprintless::CommandRunner::IPCRun>.
-
-=item localhost
-
-The localhost alias resolver to use.  Defaults to an instance of
-L<Footprintless::Localhost> configured with C<load_all()>.
-
-=item resource_manager
-
-The resource manager to use.  Defaults to an instance of 
-L<Footprintless::ResourceManager> configured to use a 
-L<Footprintless::MavenProvider> if L<Maven::Agent> is available, and a
-L<Footprintless::UrlProvider> in that order.
-
-=back
 
 =method clean(%options)
 
@@ -254,23 +192,11 @@ C<to>.  For example, if the path is C</foo/bar> and rebase is
 C<{from => '/foo', to => '/baz'}>, then the resulting path would be 
 C</baz/bar>.
 
-=item status
-
-If I<truthy>, then status information will be provided to the command 
-runner.  In order for this information to be useful, the command runner
-should be supplied with the C<{err_buffer => \*STDERR}> runner option
-so that it will, in turn, be written to STDERR.  Also, status is 
-implemented using the C<pv> command which I<MAY NOT> already be installed.
-If it is missing, this option will cause the command itself to fail.
-
 =back
 
 =head1 SEE ALSO
 
 Config::Entities
 Footprintless
-Footprintless::CommandOptionsFactory
-Footprintless::CommandRunner
-Footprintless::Localhost
-Footprintless::ResourceManager
+Footprintless::Mixins
 

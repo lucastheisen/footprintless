@@ -56,9 +56,9 @@ is($extended_footprintless->foo('bar'), 'bar', 'extended footprintless foobar');
 
 $extended_footprintless = Footprintless->new(
     entities => {
-        fpl => {
+        footprintless => {
             factory => 'Footprintless::ExtendedTestFactory'
         }
     });
-ok($extended_footprintless, 'extended fpl.factory');
+ok($extended_footprintless, 'extended footprintless.factory');
 is($extended_footprintless->foo('bar'), 'bar', 'extended fpl.factory foobar');

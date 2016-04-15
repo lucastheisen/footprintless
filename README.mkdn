@@ -143,17 +143,6 @@ If using the framework instead, the story is the same:
 
 Creates a new Footprintless factory.  Available options are:
 
-- entities
-
-    If supplied, `entities` will serve as the configuration for this instance.
-    All other configuration sources will be ignored.  Must be either a hashref, 
-    or an instance of [Config::Entities](https://metacpan.org/pod/Config::Entities).
-
-- fpl\_home
-
-    The root folder for footprintless configuration.  Defaults to the
-    `$FPL_HOME` environment variable if set, `~/.footprintless` if not.
-
 - config\_dirs
 
     The root folder(s) for configuration entities.  Defaults to the 
@@ -173,20 +162,31 @@ Creates a new Footprintless factory.  Available options are:
     directory, use a `;` to delimit on windows, or a `:` to delimit on \*nix 
     (same as the `$PATH` variable).
 
+- command\_options\_factory
+
+    Sets the `command_options_factory` for this instance.  Must be an instance
+    or subclass of `Footprintless::CommandOptionsFactory`.
+
 - command\_runner
 
     Sets the `command_runner` for this instance.  Must be an a subclass of
     `Footprintless::CommandRunner`.
 
+- entities
+
+    If supplied, `entities` will serve as the configuration for this instance.
+    All other configuration sources will be ignored.  Must be either a hashref, 
+    or an instance of [Config::Entities](https://metacpan.org/pod/Config::Entities).
+
+- fpl\_home
+
+    The root folder for footprintless configuration.  Defaults to the
+    `$FPL_HOME` environment variable if set, `~/.footprintless` if not.
+
 - localhost
 
     Sets the `localhost` resolver for this instance.  Must be an instance
     or subclass of `Footprintless::Localhost`.
-
-- command\_options\_factory
-
-    Sets the `command_options_factory` for this instance.  Must be an instance
-    or subclass of `Footprintless::CommandOptionsFactory`.
 
 # METHODS
 
@@ -285,9 +285,13 @@ operate on the overlay at `$coordinate`.  Supported options are
     A `resource_manager` to use instead of that which is supplied by
     this footprintless instance.
 
+## plugins()
+
+Returns the registered plugins for this instance.
+
 ## resource\_manager()
 
-Returns the [resource\_manager](https://metacpan.org/pod/Footprintless::ResourcManager) used by 
+Returns the [resource\_manager](https://metacpan.org/pod/Footprintless::ResourceManager) used by 
 this instance.
 
 ## service($coordinate, %options)

@@ -7,15 +7,14 @@ package Footprintless::Overlay;
 # PODNAME: Footprintless::Overlay
 
 use Carp;
-use File::Temp;
-use Footprintless::Command qw(
-    batch_command
-    cp_command
-    mkdir_command
-    rm_command
+use Footprintless::Mixins qw (
+    _clean
+    _entity
+    _local_template
+    _push_to_destination
+    _sub_coordinate
+    _sub_entity
 );
-use Footprintless::CommandRunner;
-use Footprintless::Localhost;
 use Footprintless::Util qw(
     extract
     invalid_entity
@@ -33,10 +32,7 @@ sub new {
 
 sub clean {
     my ($self) = @_;
-
-    Footprintless::Util::clean($self->{spec}{clean},
-        command_runner => $self->{command_runner},
-        command_options => $self->{command_options});
+    $self->_clean();
 }
 
 sub _init {
@@ -44,107 +40,79 @@ sub _init {
     $logger->tracef("coordinate=[%s],options=[%s]",
         $coordinate, \%options);
 
-    $self->{entity} = $factory->entities();
-    $self->{spec} = $self->{entity}->get_entity($coordinate);
-    invalid_entity("base_dir, to_dir, template_dir required") 
-        unless ($self->{spec}{base_dir}
-            && $self->{spec}{to_dir}
-            && $self->{spec}{template_dir});
-
     $self->{factory} = $factory;
-    $self->{localhost} = $factory->localhost();
-    $self->{command_runner} = $factory->command_runner();
-    $self->{command_options} = $factory->command_options(%{$self->{spec}});
+    $self->{coordinate} = $coordinate;
 
     return $self;
 }
 
 sub initialize {
     my ($self) = @_;
-    my $is_local = $self->{localhost}->is_alias($self->{spec}{hostname});
-    my $to_dir = $is_local ? $self->{spec}{to_dir} : temp_dir();
+    $self->_local_template_with_base_and_template(
+        sub {
+            my ($base_dir, $template_dir, $to_dir) = @_;
+            $self->clean();
+            $self->_overlay($base_dir)->overlay($template_dir, to => $to_dir);
+        });
+}
 
-    $self->clean();
+sub _local_template_with_base_and_template {
+    my ($self, $local_work) = @_;
+    $self->_local_template(
+        sub {
+            my ($to_dir) = @_;
+            my $base_dir = $self->_sub_entity('base_dir');
+            my $template_dir = $self->_sub_entity('template_dir');
+            my $resource = $self->_sub_entity('resource');
+            if ($resource) {
+                my $unpack_dir = temp_dir();
+                extract($self->_download($resource), to => $unpack_dir);
 
-    my ($base_dir, $template_dir, $resource_dir);
-    if ($self->{spec}{resource}) {
-        $resource_dir = temp_dir();
+                if ($base_dir) {
+                    $base_dir = File::Spec->catdir($unpack_dir, $base_dir);
+                }
+                if ($template_dir) {
+                    $template_dir = File::Spec->catdir($unpack_dir, $template_dir);
+                }
+            }
 
-        my $download_dir = File::Spec->catdir($resource_dir, 'download');
-        mkdir($download_dir);
-        my $archive = $self->{factory}->resource_manager()
-            ->download($self->{spec}{resource}, to => $download_dir),
-
-        my $unpack_dir = File::Spec->catdir($resource_dir, 'unpack');
-        mkdir($unpack_dir);
-        extract($archive, to => $unpack_dir);
-
-        if ($self->{spec}{base_dir}) {
-            $base_dir = File::Spec->catdir($unpack_dir, 
-                $self->{spec}{base_dir});
-        }
-        if ($self->{spec}{template_dir}) {
-            $template_dir = File::Spec->catdir($unpack_dir, 
-                $self->{spec}{template_dir});
-        }
-    }
-    else {
-        $base_dir = $self->{spec}{base_dir};
-        $template_dir = $self->{spec}{template_dir};
-    }
-
-    $self->_overlay($base_dir)->overlay($template_dir, to => $to_dir);
-
-    $self->_push_to_destination($to_dir) unless ($is_local);
+            &$local_work($base_dir, $template_dir, $to_dir);
+        });
 }
 
 sub _overlay {
     my ($self, $base_dir) = @_;
 
     my @overlay_opts = ();
-    if ($self->{spec}{key}) {
-        push(@overlay_opts, key => $self->{spec}{key});
-    }
+    my $key = $self->_sub_entity('key');
+    push(@overlay_opts, key => $key) if ($key);
 
     return Template::Overlay->new($base_dir, 
         $self->_resolver(), @overlay_opts)
-}
-
-sub _push_to_destination {
-    my ($self, $temp_dir, $status) = @_;
-
-    $self->{command_runner}->run_or_die(
-        cp_command(
-            $temp_dir, 
-            $self->{spec}{to_dir},
-            $self->{command_options},
-            'status' => $status));
 }
 
 sub _resolver {
     my ($self) = @_;
 
     my @resolver_opts = ();
-    if ($self->{spec}{os}) {
-        push(@resolver_opts, os => $self->{spec}{os});
-    }
+    my $os = $self->_sub_entity('os');
+    push(@resolver_opts, os => $os) if ($os);
 
-    my $resolver_spec = $self->{spec}{resolver_coordinate}
-        ? $self->{entity}->get_entity($self->{spec}{resolver_coordinate})
-        : $self->{spec};
+    my $resolver_coordinate = $self->_sub_entity('resolver_coordinate');
+    my $resolver_spec = $resolver_coordinate
+        ? $self->_entity($resolver_coordinate)
+        : $self->_entity();
     return Template::Resolver->new($resolver_spec, @resolver_opts);
 }
 
 sub update {
     my ($self) = @_;
-    my $is_local = $self->{localhost}->is_alias($self->{spec}{hostname});
-    my $to_dir = $is_local ? $self->{spec}{to_dir} : temp_dir();
-
-    $logger->tracef("update to=[%s], template=[%s]", $to_dir, $self->{spec}{template_dir});
-    $self->_overlay($to_dir)
-        ->overlay($self->{spec}{template_dir});
-
-    $self->_push_to_destination($to_dir) unless ($is_local);
+    $self->_local_template_with_base_and_template(
+        sub {
+            my ($base_dir, $template_dir, $to_dir) = @_;
+            $logger->tracef("update to=[%s], template=[%s]", $to_dir, $template_dir);
+            $self->_overlay($to_dir)->overlay($template_dir);
+        });
 }
 
 1;
@@ -228,30 +196,9 @@ A more complex example:
         }
     }
 
-=constructor new($entity, $coordinate, %options)
+=constructor new($entity, $coordinate)
 
 Constructs a new overlay configured by C<$entities> at C<$coordinate>.  
-The supported options are:
-
-=over 4
-
-=item command_options_factory
-
-The command options factory to use.  Defaults to an instance of
-L<Footprintless::CommandOptionsFactory> using the C<localhost> instance
-of this object.
-
-=item command_runner
-
-The command runner to use.  Defaults to an instance of 
-L<Footprintless::CommandRunner::IPCRun>.
-
-=item localhost
-
-The localhost alias resolver to use.  Defaults to an instance of
-L<Footprintless::Localhost> configured with C<load_all()>.
-
-=back
 
 =method clean()
 
@@ -273,9 +220,5 @@ any files from C<base_dir> like C<initialize> does.
 
 Config::Entities
 Footprintless
-Footprintless::CommandOptionsFactory
-Footprintless::CommandRunner
-Footprintless::Deployment
-Footprintless::Localhost
-Footprintless::ResourceManager
-
+Footprintless::Mixins
+Template::Overlay

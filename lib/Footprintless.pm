@@ -311,17 +311,6 @@ Creates a new Footprintless factory.  Available options are:
 
 =over 4
 
-=item entities
-
-If supplied, C<entities> will serve as the configuration for this instance.
-All other configuration sources will be ignored.  Must be either a hashref, 
-or an instance of L<Config::Entities>.
-
-=item fpl_home
-
-The root folder for footprintless configuration.  Defaults to the
-C<$FPL_HOME> environment variable if set, C<~/.footprintless> if not.
-
 =item config_dirs
 
 The root folder(s) for configuration entities.  Defaults to the 
@@ -341,20 +330,31 @@ the C<$FPL_CONFIG_PROPS> environment variable, and you need more than one
 directory, use a C<;> to delimit on windows, or a C<:> to delimit on *nix 
 (same as the C<$PATH> variable).
 
+=item command_options_factory
+
+Sets the C<command_options_factory> for this instance.  Must be an instance
+or subclass of C<Footprintless::CommandOptionsFactory>.
+
 =item command_runner
 
 Sets the C<command_runner> for this instance.  Must be an a subclass of
 C<Footprintless::CommandRunner>.
 
+=item entities
+
+If supplied, C<entities> will serve as the configuration for this instance.
+All other configuration sources will be ignored.  Must be either a hashref, 
+or an instance of L<Config::Entities>.
+
+=item fpl_home
+
+The root folder for footprintless configuration.  Defaults to the
+C<$FPL_HOME> environment variable if set, C<~/.footprintless> if not.
+
 =item localhost
 
 Sets the C<localhost> resolver for this instance.  Must be an instance
 or subclass of C<Footprintless::Localhost>.
-
-=item command_options_factory
-
-Sets the C<command_options_factory> for this instance.  Must be an instance
-or subclass of C<Footprintless::CommandOptionsFactory>.
 
 =back
 
@@ -465,9 +465,13 @@ this footprintless instance.
 
 =back
 
+=method plugins()
+
+Returns the registered plugins for this instance.
+
 =method resource_manager()
 
-Returns the L<resource_manager|Footprintless::ResourcManager> used by 
+Returns the L<resource_manager|Footprintless::ResourceManager> used by 
 this instance.
 
 =method service($coordinate, %options)
