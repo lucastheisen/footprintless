@@ -12,8 +12,10 @@ use Log::Any;
 
 my $logger = Log::Any->get_logger();
 
+my $pretend_self = {};
+
 # todo: remove after https://github.com/rjbs/App-Cmd/pull/60
-sub new {
+sub _new {
     my ($class, $arg) = @_;
 
     my $arg0 = $0;
@@ -69,9 +71,17 @@ sub global_opt_spec {
     );
 }
 
+# todo: remove after https://github.com/rjbs/App-Cmd/pull/60
 sub footprintless_plugin_search_paths {
+    my @paths = ();
+    foreach my $plugin (footprintless($pretend_self)->plugins()) {
+        push(@paths, $plugin->command_packages());
+    }
+    return @paths;
+}
+
+sub REAL_footprintless_plugin_search_paths {
     my ($self) = @_;
-print("REMOVE ME: WTF?\n");
 
     unless ($self->{plugin_search_paths}) {
         my @paths = ();
@@ -101,7 +111,7 @@ __END__
 
 Returns the instance of C<Footprintless> for this instance of the app.
 
-=for Pod::Coverage get_command global_opt_spec footprintless_plugin_search_paths plugin_search_path
+=for Pod::Coverage get_command global_opt_spec footprintless_plugin_search_paths REAL_footprintless_plugin_search_paths plugin_search_path
 
 =head1 SEE ALSO
 

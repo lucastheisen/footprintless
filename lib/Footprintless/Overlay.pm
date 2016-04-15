@@ -10,13 +10,13 @@ use Carp;
 use Footprintless::Mixins qw (
     _clean
     _entity
+    _extract_resource
     _local_template
     _push_to_destination
     _sub_coordinate
     _sub_entity
 );
 use Footprintless::Util qw(
-    extract
     invalid_entity
     temp_dir
 );
@@ -35,6 +35,28 @@ sub clean {
     $self->_clean();
 }
 
+sub _dirs_template {
+    my ($self, $to_dir, $with_dirs_work) = @_;
+
+    my $base_dir = $self->_sub_entity('base_dir');
+    my $template_dir = $self->_sub_entity('template_dir');
+
+    my $unpack_dir;
+    my $resource = $self->_sub_entity('resource');
+    if ($resource) {
+        $self->_extract_resource($resource, $unpack_dir);
+
+        if ($base_dir) {
+            $base_dir = File::Spec->catdir($unpack_dir, $base_dir);
+        }
+        if ($template_dir) {
+            $template_dir = File::Spec->catdir($unpack_dir, $template_dir);
+        }
+    }
+
+    &$with_dirs_work($base_dir, $template_dir, $to_dir);
+}
+
 sub _init {
     my ($self, $factory, $coordinate, %options) = @_;
     $logger->tracef("coordinate=[%s],options=[%s]",
@@ -47,36 +69,34 @@ sub _init {
 }
 
 sub initialize {
-    my ($self) = @_;
-    $self->_local_template_with_base_and_template(
-        sub {
-            my ($base_dir, $template_dir, $to_dir) = @_;
-            $self->clean();
-            $self->_overlay($base_dir)->overlay($template_dir, to => $to_dir);
-        });
+    my ($self, %options) = @_;
+    
+    $self->clean();
+
+    if ($options{to_dir}) {
+        $self->_dirs_template($options{to_dir},
+            sub {
+                $self->_initialize(@_);
+            });
+    }
+    else {
+        $self->_local_with_dirs_template(
+            sub {
+                $self->_initialize(@_);
+            });
+    }
 }
 
-sub _local_template_with_base_and_template {
+sub _initialize {
+    my ($self, $base_dir, $template_dir, $to_dir) = @_;
+    $self->_overlay($base_dir)->overlay($template_dir, to => $to_dir);
+}
+
+sub _local_with_dirs_template {
     my ($self, $local_work) = @_;
     $self->_local_template(
         sub {
-            my ($to_dir) = @_;
-            my $base_dir = $self->_sub_entity('base_dir');
-            my $template_dir = $self->_sub_entity('template_dir');
-            my $resource = $self->_sub_entity('resource');
-            if ($resource) {
-                my $unpack_dir = temp_dir();
-                extract($self->_download($resource), to => $unpack_dir);
-
-                if ($base_dir) {
-                    $base_dir = File::Spec->catdir($unpack_dir, $base_dir);
-                }
-                if ($template_dir) {
-                    $template_dir = File::Spec->catdir($unpack_dir, $template_dir);
-                }
-            }
-
-            &$local_work($base_dir, $template_dir, $to_dir);
+            $self->_dirs_template($_[0], $local_work);
         });
 }
 
@@ -106,13 +126,26 @@ sub _resolver {
 }
 
 sub update {
-    my ($self) = @_;
-    $self->_local_template_with_base_and_template(
-        sub {
-            my ($base_dir, $template_dir, $to_dir) = @_;
-            $logger->tracef("update to=[%s], template=[%s]", $to_dir, $template_dir);
-            $self->_overlay($to_dir)->overlay($template_dir);
-        });
+    my ($self, %options) = @_;
+
+    if ($options{to_dir}) {
+        $self->_dirs_template($options{to_dir},
+            sub {
+                $self->_update(@_);
+            });
+    }
+    else {
+        $self->_local_with_dirs_template(
+            sub {
+                $self->_update(@_);
+            });
+    }
+}
+
+sub _update {
+    my ($self, $base_dir, $template_dir, $to_dir) = @_;
+    $logger->tracef("update to=[%s], template=[%s]", $to_dir, $template_dir);
+    $self->_overlay($to_dir)->overlay($template_dir);
 }
 
 1;

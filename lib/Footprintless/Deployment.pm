@@ -36,22 +36,31 @@ sub clean {
 
 sub deploy {
     my ($self, %options) = @_;
-    my $resources = $self->_sub_entity('resources', 1);
 
-    $self->_local_template(
-        sub {
-            my ($to_dir) = @_;
-
-            my @names = $options{names}
-                ? @{$options{names}}
-                : keys(%$resources);
-
-            $logger->debugf("deploy %s to %s", \@names, $to_dir);
-            $self->_download($resources->{$_}, $to_dir) foreach (@names);
-        },
-        rebase => $options{rebase});
+    if ($options{to_dir}) {
+        $self->_deploy($options{to_dir});
+    }
+    else {
+        $self->_local_template(
+            sub {
+                $self->_deploy(@_);
+            },
+            rebase => $options{rebase});
+    }
 
     $logger->debug("deploy complete");
+}
+
+sub _deploy {
+    my ($self, $to_dir, %options) = @_;
+    my $resources = $self->_sub_entity('resources', 1);
+
+    my @names = $options{names}
+        ? @{$options{names}}
+        : keys(%$resources);
+
+    $logger->debugf("deploy %s to %s", \@names, $to_dir);
+    $self->_download($resources->{$_}, $to_dir) foreach (@names);
 }
 
 sub _init {

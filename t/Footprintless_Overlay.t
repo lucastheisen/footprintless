@@ -15,7 +15,7 @@ use Footprintless::Util qw(
     slurp 
     spurt
 );
-use Test::More tests => 11;
+use Test::More tests => 18;
 
 BEGIN {use_ok('Footprintless::Overlay')}
 
@@ -144,6 +144,59 @@ sub temp_dirs {
     ok(-f $to_file, 'clean test to_file created');
     $overlay->clean();
     ok(!-e $to_file, 'clean test');
+}
+
+{
+    $logger->info('Verify alternate to_dir');
+    my ($temp_dir, $base_dir, $to_dir, $template_dir) = temp_dirs();
+    my $alternate_to_dir = File::Spec->catdir($temp_dir, 'alternate');
+    make_path($alternate_to_dir);
+
+    my $hostname = 'localhost';
+    my $overlay = Footprintless::Overlay->new(
+        factory({
+            system => {
+                hostname => $hostname,
+                app => {
+                    'Config::Entities::inherit' => ['hostname'],
+                    overlay => {
+                        'Config::Entities::inherit' => ['hostname', 'sudo_username'],
+                        base_dir => $base_dir,
+                        clean => ["$to_dir/"],
+                        key => 'T',
+                        os => $^O,
+                        resolver_coordinate => 'system',
+                        template_dir => $template_dir,
+                        to_dir => $to_dir
+                    }
+                }
+            }
+        }),
+        'system.app.overlay');
+    ok($overlay, 'overlay constructed');
+
+    my $name = 'foo';
+    my $template_file = File::Spec->catfile($template_dir, $name);
+    my $to_file = File::Spec->catfile($to_dir, $name);
+    my $alternate_to_file = File::Spec->catfile($alternate_to_dir, $name);
+    spurt('hostname=[${T{app.hostname}}]', $template_file);
+    my $base_template_file = File::Spec->catfile($base_dir, $name);
+    spurt('i should be overlayed', $base_template_file);
+    my $base_name = 'bar';
+    my $base_file = File::Spec->catfile($base_dir, $base_name);
+    spurt('bar', $base_file);
+
+    $overlay->initialize(to_dir => $alternate_to_dir);
+    ok(!-e $to_file, 'configured initialize template does not exist');
+    is(slurp($alternate_to_file), "hostname=[$hostname]", 'alternate initialize template');
+    is(slurp($base_file), "bar", 'configured initialize base');
+
+    unlink($alternate_to_file);
+    ok(!-e $alternate_to_file, 'alternate_to_file deleted');
+
+    $overlay->update(to_dir => $alternate_to_dir);
+    ok(!-e $to_file, 'configured update template does not exist');
+    is(slurp($alternate_to_file), "hostname=[$hostname]", 'alternate update');
 }
 
 SKIP: {

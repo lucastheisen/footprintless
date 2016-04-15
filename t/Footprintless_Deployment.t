@@ -17,7 +17,7 @@ use Footprintless::Util qw(
 use Footprintless::Test::Util qw(
     is_empty_dir
 );
-use Test::More tests => 26;
+use Test::More tests => 32;
 
 BEGIN {use_ok('Footprintless::Deployment')}
 
@@ -194,4 +194,37 @@ SKIP: {
     is(slurp($to_foobarwar), slurp($barwar), 'resource_dir foobar is bar');
     ok(-f $to_foobazwar, 'resource_dir foobaz deployed');
     is(slurp($to_foobazwar), slurp($bazwar), 'resource_dir foobaz is baz');
+}
+
+{
+    my ($temp_dir, $to_dir) = temp_dirs();
+    my $alternate_to_dir = File::Spec->catdir($temp_dir, 'alternate');
+    make_path($alternate_to_dir);
+
+    my $barwar = File::Spec->catfile($test_dir, 'data', 'resources', 'bar.war');
+    my $to_foobarwar = File::Spec->catfile($to_dir, 'foobar.war');
+    my $alternate_to_foobarwar = File::Spec->catfile($alternate_to_dir, 'foobar.war');
+    my $bazwar = File::Spec->catfile($test_dir, 'data', 'resources', 'baz.war');
+    my $to_foobazwar = File::Spec->catfile($to_dir, 'foobaz.war');
+    my $alternate_to_foobazwar = File::Spec->catfile($alternate_to_dir, 'foobaz.war');
+
+    my $deployment = Footprintless::Deployment->new(
+        factory('foo', $to_dir, undef, 
+            bar => {
+                url => $barwar,
+                'as' => 'foobar.war'
+            }, 
+            baz => {
+                url => $bazwar,
+                'as' => 'foobaz.war'
+            }),
+        'foo.deployment');
+    $deployment->deploy(to_dir => $alternate_to_dir);
+
+    ok(!-e $to_foobarwar, 'configured foobar not deployed');
+    ok(-f $alternate_to_foobarwar, 'alternate foobar deployed');
+    is(slurp($alternate_to_foobarwar), slurp($barwar), 'alternate foobar is bar');
+    ok(!-e $to_foobazwar, 'configured foobaz not deployed');
+    ok(-f $alternate_to_foobazwar, 'alternate foobaz deployed');
+    is(slurp($alternate_to_foobazwar), slurp($bazwar), 'alternate foobaz is baz');
 }

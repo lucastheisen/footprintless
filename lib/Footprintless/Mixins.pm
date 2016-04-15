@@ -29,6 +29,7 @@ our @EXPORT_OK = qw(
     _deployment
     _download
     _entity
+    _extract_resource
     _is_local
     _local_template
     _overlay
@@ -104,21 +105,22 @@ sub _is_local {
 
 sub _local_template {
     my ($self, $local_work, %options) = @_;
-    my $dest_dir = _sub_entity($self, 'to_dir', 1);
+    my $destination_dir = $options{destination_dir} 
+        || _sub_entity($self, 'to_dir', 1);
 
     my ($is_local, $to_dir);
     if ($options{rebase}) {
-        $to_dir = rebase($dest_dir, $options{rebase});
+        $to_dir = rebase($destination_dir, $options{rebase});
         $is_local = 1;
     }
     else {
         $is_local = _is_local($self, 'hostname');
-        $to_dir = $is_local ? $dest_dir : temp_dir();
+        $to_dir = $is_local ? $destination_dir : temp_dir();
     }
 
     &$local_work($to_dir);
 
-    _push_to_destination($self, $to_dir, $dest_dir) unless ($is_local);
+    _push_to_destination($self, $to_dir, $destination_dir) unless ($is_local);
 }
 
 sub _overlay {
