@@ -1,5 +1,8 @@
 Revision history for Perl module Footprintless
 
+1.03 2016-04-30
+    - Fixed Bug #113348 for Footprintless: Undeclared dependency App::Cmd::Tester
+
 1.02 2016-04-30
     - Added plugin capability.
     - Added mixins feature.
