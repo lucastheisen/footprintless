@@ -114,7 +114,7 @@ sub cp_command {
             push(@destination_parts, 
                 _sudo_command($destination_command_options 
                     && $destination_command_options->get_sudo_username(),
-                    "tar -x -C $destination_path"));
+                    "tar --no-overwrite-dir -x -C $destination_path"));
 
             $source_command = command(pipe_command(@parts), 
                 $source_command_options);
