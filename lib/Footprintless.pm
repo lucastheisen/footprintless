@@ -157,6 +157,11 @@ sub service {
     $self->{factory}->service(@args);
 }
 
+sub tunnel {
+    my ($self, @args) = @_;
+    $self->{factory}->tunnel(@args);
+}
+
 sub _split_dirs {
     my ($dirs_string) = @_;
 
@@ -497,6 +502,11 @@ A C<localhost> to use instead of that which is supplied by
 this footprintless instance.
 
 =back
+
+=method tunnel($coordinate, %options)
+
+Returns a new instance of L<Footprintless::Tunnel> preconfigured 
+for C<$coordinate>. 
 
 =head1 SEE ALSO
 

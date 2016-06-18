@@ -87,6 +87,7 @@ sub _init {
     $self->{agent} = $options{agent};
     $self->{command_options_factory} = $options{command_options_factory};
     $self->{command_runner} = $options{command_runner};
+    $self->{localhost} = $options{localhost};
     $self->{resource_manager} = $options{resource_manager};
 
     $self->{plugins} = [];
@@ -157,6 +158,13 @@ sub service {
 
     require Footprintless::Service;
     return Footprintless::Service->new($self, $coordinate, %options);
+}
+
+sub tunnel {
+    my ($self, $coordinate, %options) = @_;
+
+    require Footprintless::Tunnel;
+    return Footprintless::Tunnel->new($self, $coordinate, %options);
 }
 
 1;
@@ -319,6 +327,11 @@ A C<localhost> to use instead of that which is supplied by
 this footprintless instance.
 
 =back
+
+=method tunnel($coordinate, %options)
+
+Returns a new instance of L<Footprintless::Tunnel> preconfigured 
+for C<$coordinate>. 
 
 =head1 SEE ALSO
 
