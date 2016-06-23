@@ -310,9 +310,10 @@ is available, and a L<url provider|Footprintless::Resource::UrlProvider>
 in that order.  If C<$agent> is provided, it will be passed on to the 
 providers.
 
-=func slurp($file)
+=func slurp([$file])
 
-Reads the entire contents of C<$file> in one gulp.
+Reads the entire contents of C<$file> in one gulp.  If C<$file> is 
+omitted, then it will read C<STDIN>.
 
 =func spurt($content, $file, %options)
 
