@@ -80,10 +80,10 @@ sub exit_due_to {
     if (ref($dollar_at) 
         && $dollar_at->isa(
             'Footprintless::CommandRunner::ExecutionException')) {
-        $@->exit($verbose);
+        $dollar_at->exit($verbose);
     }
     else {
-        print(STDERR "$@");
+        print(STDERR "$dollar_at\n");
         exit 255;
     }
 }
@@ -186,7 +186,9 @@ sub resource_manager {
 sub slurp {
     my ($file) = @_;
     # http://www.perl.com/pub/2003/11/21/slurp.html
-    return do { local( @ARGV, $/ ) = $file; <> };
+    return $file
+        ? do {local(@ARGV, $/) = $file; <>}
+        : do {local $/; <STDIN>};
 }
 
 sub spurt {
