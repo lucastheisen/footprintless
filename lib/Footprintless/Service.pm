@@ -46,16 +46,27 @@ sub _command {
 
             my $pid_file = $self->{spec}{pid_file};
             my $pid_command = $pid_file
-                ? "cat $pid_file"
+                ? command("cat $pid_file",
+                    $self->{command_options}->clone(
+                        hostname => undef,
+                        ssh => undef,
+                        ssh_username => undef,
+                    ))
                 : $self->{spec}{pid_command};
             if ($action eq 'kill') {
                 return "kill -KILL \$($pid_command)";
             }
             elsif ($action eq 'status') {
                 my $command_name = $actions_spec->{command_name} || $command || 'command';
+                my $status_command = command('kill -0 \$pid 2> /dev/null',
+                    $self->{command_options}->clone(
+                        hostname => undef,
+                        ssh => undef,
+                        ssh_username => undef,
+                    ));
                 return batch_command(
                     "pid=\$($pid_command)",
-                    "if [[ -n \$pid ]] && \$(kill -0 \$pid 2> /dev/null)",
+                    "if [[ -n \$pid ]] && \$($status_command)",
                     "then printf '$command_name (pid \%s) is running...' \"\$pid\"",
                     "else printf '$command_name is stopped...'",
                     "fi",
