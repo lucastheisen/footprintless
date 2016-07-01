@@ -21,6 +21,8 @@ use Footprintless::Util qw(
     temp_dir
 );
 use Log::Any;
+use File::Find;
+use File::Spec;
 use Template::Resolver;
 use Template::Overlay;
 
@@ -89,7 +91,16 @@ sub initialize {
 
 sub _initialize {
     my ($self, $base_dir, $template_dir, $to_dir) = @_;
-    $self->_overlay($base_dir)->overlay($template_dir, to => $to_dir);
+    $self->_overlay($base_dir)->overlay($template_dir, 
+        to => $to_dir,
+        resolver => sub {
+            my ($template, $destination) = @_;
+            if ($template =~ /\/\.footprintless$/) {
+                $self->_resolve_footprintless($template, $destination);
+                return 1;
+            }
+            return 0;
+        });
 }
 
 sub _local_with_dirs_template {
@@ -123,6 +134,23 @@ sub _resolver {
         ? $self->_entity($resolver_coordinate)
         : $self->_entity();
     return Template::Resolver->new($resolver_spec, @resolver_opts);
+}
+
+sub _resolve_footprintless {
+    my ($self, $template, $footprintless_path) = @_;
+    my $destination = (File::Spec->splitpath($footprintless_path))[1];
+    $logger->debugf("resolving [%s]->[%s]", $template, $destination);
+
+    my $spec = do($template) || return;
+    croak("invalid $template") unless (ref($spec) eq 'HASH');
+
+    if ($spec->{resources}) {
+        my $resource_manager = $self->{factory}->resource_manager();
+        foreach my $resource (keys(%{$spec->{resources}})) {
+            $resource_manager->download($spec->{resources}{$resource},
+                to => $destination);
+        }
+    }
 }
 
 sub update {
