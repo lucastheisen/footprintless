@@ -24,6 +24,7 @@ our @EXPORT_OK = qw(
     slurp
     spurt
     temp_dir
+    temp_file
 );
 
 my $logger = Log::Any->get_logger();
@@ -203,7 +204,21 @@ sub spurt {
 sub temp_dir {
     require File::Temp;
     File::Temp->safe_level(File::Temp::HIGH());
-    return File::Temp->newdir();
+    my $temp = File::Temp->newdir();
+    if (!chmod(0700, $temp)) {
+        croak("unable to create secure temp file");
+    }
+    return $temp;
+}
+
+sub temp_file {
+    require File::Temp;
+    File::Temp->safe_level(File::Temp::HIGH());
+    my $temp = File::Temp->new();
+    if (!chmod(0600, $temp)) {
+        croak("unable to create secure temp file");
+    }
+    return $temp;
 }
 
 1;

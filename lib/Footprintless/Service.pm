@@ -58,20 +58,10 @@ sub _command {
             }
             elsif ($action eq 'status') {
                 my $command_name = $actions_spec->{command_name} || $command || 'command';
-                my $status_command = command('kill -0 \$pid 2> /dev/null',
-                    $self->{command_options}->clone(
-                        hostname => undef,
-                        ssh => undef,
-                        ssh_username => undef,
-                    ));
-                return batch_command(
-                    "pid=\$($pid_command)",
-                    "if [[ -n \$pid ]] && \$($status_command)",
-                    "then printf '$command_name (pid \%s) is running...' \"\$pid\"",
-                    "else printf '$command_name is stopped...'",
-                    "fi",
-                    {subshell => 'bash -c '}
-                )
+                return command(
+                    "kill -0 \$($pid_command) 2> /dev/null "
+                        . "&& echo '$command_name is running' "
+                        . "|| echo '$command_name is stopped'");
             }
             else {
                 invalid_entity($self->{coordinate}, "use_pid not supported for [$action]");

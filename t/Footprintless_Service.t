@@ -101,7 +101,7 @@ my $command_runner = Footprintless::CommandRunner::Mock->new(
     is($@->get_message(), 'use_pid not supported for [start]', 'use_pid start');
     $service->status();
     is($command_runner->get_command(), 
-        'bash -c "pid=\$(cat /var/run/bar/bar.pid);if [[ -n \$pid ]] && \$(kill -0 \$pid 2> /dev/null);then printf \'/opt/foo/bar.sh (pid %s) is running...\' \"\$pid\";else printf \'/opt/foo/bar.sh is stopped...\';fi"',
+        'kill -0 $(cat /var/run/bar/bar.pid) 2> /dev/null && echo \'/opt/foo/bar.sh is running\' || echo \'/opt/foo/bar.sh is stopped\'',
         'use_pid status');
     eval {$service->stop()};
     is($@->get_message(), 'use_pid not supported for [stop]', 'use_pid stop');
