@@ -25,7 +25,7 @@ eval {
 
     require Log::Any::Adapter;
     Log::Any::Adapter->set('+Footprintless::Test::Log::Any::Adapter::Handle', 
-        handle => \*STDOUT,
+        handle => \*STDERR,
         log_level => Log::Any::Adapter::Util::numeric_level($level));
 };
 
@@ -68,7 +68,10 @@ ok($footprintless, 'footprintless');
 is(ref($footprintless->command_runner()), 
     'Footprintless::CommandRunner::Echo',
     'mock command runner');
-is(test_app('Footprintless::App' => ['log', 'foo.logs.bar', 'cat'])->stdout(),
+is(test_app(
+    'Footprintless::App' => [
+        'log', 'foo.logs.bar', 'cat'
+    ])->stdout(),
     "cat " . $footprintless->entities()->get_entity('foo.logs.bar'),
     'cat bar');
 is(test_app(
