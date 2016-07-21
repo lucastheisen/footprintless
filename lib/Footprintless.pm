@@ -54,7 +54,7 @@ sub entities {
 sub _init {
     my ($self, %options) = @_;
     
-    $logger->debugf('creating new Footprintless: %s', %options);
+    $logger->debugf('creating new Footprintless: %s', \%options);
 
     if ($options{factory}) {
         $self->{factory} = $options{factory};
