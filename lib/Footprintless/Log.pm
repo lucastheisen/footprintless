@@ -156,7 +156,7 @@ sub _runner_options {
             my $handle = $runner_options->{out_handle};
             $options->{out_callback} = sub {
                 my ($line) = @_;
-                print($handle $line) if ($handle);
+                print($handle "$line\n") if ($handle);
                 die ('until found') if ($line =~ $until);
             };
         }
