@@ -3,6 +3,9 @@ use warnings;
 
 package Footprintless::Tunnel;
 
+# ABSTRACT: Provides tunneling over ssh
+# PODNAME: Footprintless::Tunnel
+
 use Carp;
 use File::Path qw(make_path);
 use File::Spec;
@@ -177,3 +180,68 @@ sub _temp_control_socket {
 }
 
 1;
+
+__END__
+
+=head1 SYNOPSIS
+
+    # Standard way of creating tunnels
+    use Footprintless;
+    my $tunnel = Footprintless->new()->tunnel($coordinate);
+
+    eval {
+        $tunnel->open();
+        my $local_hostname = $tunnel->get_local_hostname();
+        my $port = $tunnel->get_local_port();
+
+        # do stuff with tunnel
+    }
+    my $error = $@;
+    eval {$tunnel->close()};
+    die($error) if ($error);
+
+=head1 DESCRIPTION
+
+This module provides tunneling over ssh
+
+=head1 ENTITIES
+
+    tunnel => {
+        ssh => 'ssh -q',
+        local_hostname => 'foo',
+        local_port => 1234,
+        tunnel_hostname => 'bar',
+        tunnel_usename => 'fred',
+        destination_hostname => 'baz',
+        destination_port => 5678,
+        control_socket_dir => '/home/me/.ssh/control_socket'
+    }
+
+=constructor new($entity, $coordinate, %options)
+
+Creates a new tunnel configured by C<$entities>.
+
+=method close()
+
+Closes the tunnel.
+
+=method get_local_hostname()
+
+Returns the hostname used to access the tunnel.
+
+=method get_local_port()
+
+Returns the port used to access the tunnel.
+
+=method is_open()
+
+Returns a I<truthy> value if the tunnel is open.
+
+=method open()
+
+Opens the tunnel.
+
+=head1 SEE ALSO
+
+Config::Entities
+Footprintless

@@ -334,6 +334,11 @@ omitted, then it will read C<STDIN>.
 
 Writes C<$content> to C<$file>.  The available options are:
 
+=func temp_file()
+
+Creates a new temporary file with C<safe_level> set to 
+C<HIGH>.  Returns the new L<File::Temp> object.
+
 =func temp_dir()
 
 Creates a new temporary directory with C<safe_level> set to 

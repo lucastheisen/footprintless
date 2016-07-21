@@ -4,7 +4,7 @@ Footprintless - A utility for managing systems with minimal installs
 
 # VERSION
 
-version 1.03
+version 1.04
 
 # SYNOPSIS
 
@@ -314,9 +314,14 @@ operate on the service at `$coordinate`.  Supported options are
     A `localhost` to use instead of that which is supplied by
     this footprintless instance.
 
+## tunnel($coordinate, %options)
+
+Returns a new instance of [Footprintless::Tunnel](https://metacpan.org/pod/Footprintless::Tunnel) preconfigured 
+for `$coordinate`. 
+
 # AUTHOR
 
-Lucas Theisen &lt;lucastheisen@pastdev.com>
+Lucas Theisen <lucastheisen@pastdev.com>
 
 # COPYRIGHT AND LICENSE
 
