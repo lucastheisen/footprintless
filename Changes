@@ -1,5 +1,20 @@
 Revision history for Perl module Footprintless
 
+1.04 2016-07-21
+    - added ability to pass runner options to service
+    - fixed logger message in Footprintless::_init
+    - fixed Footprintless_App_Command_log logger to use STDERR to avoid STDOUT conflicts
+    - fixed out_handle for until to print a newline after each line
+    - modified temp_dir and added temp_file both of which are now secure, reimplemented service status to better handle su
+    - added missing dependency on URI
+    - added resolution during overlay if .footprintless is encountered
+    - updated service to support sub commands with sudo if needed
+    - updated pod for Footprintless::Util::slurp
+    - fixed invalid variable reference in Footprintless::Util::exit_due_to, and added support for STDIN in Footprintless::
+    - added Tunnel.pm and associated factory methods
+    - updated tests to included --no-overwrite-dir for the cp_command tar
+    - added --no-overwrite-dir to the cp_command tar to avoid needing permissions on folders we are not adding to/deleting
+
 1.03 2016-04-30
     - Fixed Bug #113348 for Footprintless: Undeclared dependency App::Cmd::Tester
 
