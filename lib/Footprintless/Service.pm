@@ -26,7 +26,8 @@ sub new {
 }
 
 sub kill {
-    $_[0]->execute('kill');
+    my ($self, %options) = @_;
+    $self->execute('kill', %options);
 }
 
 sub _command {
@@ -75,12 +76,17 @@ sub _command {
 }
 
 sub execute {
-    my ($self, $action) = @_;
+    my ($self, $action, %options) = @_;
+
+    my $runner_options = %options && $options{runner_options}
+        ? $options{runner_options}
+        : {out_handle => \*STDOUT};
+
     $self->{command_runner}->run_or_die(
         command(
             $self->_command($action),
             $self->{command_options}),
-        {out_handle => \*STDOUT});
+        $runner_options);
 }
 
 sub _init {
@@ -99,15 +105,18 @@ sub _init {
 }
 
 sub start {
-    $_[0]->execute('start');
+    my ($self, %options) = @_;
+    $self->execute('start', %options);
 }
 
 sub status {
-    $_[0]->execute('status');
+    my ($self, %options) = @_;
+    $self->execute('status', %options);
 }
 
 sub stop {
-    $_[0]->execute('stop');
+    my ($self, %options) = @_;
+    $self->execute('stop', %options);
 }
 
 1;

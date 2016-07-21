@@ -8,7 +8,7 @@ use Footprintless::CommandRunner::Mock;
 use Footprintless::Util qw(
     factory
 );
-use Test::More tests => 22;
+use Test::More tests => 23;
 
 BEGIN {use_ok('Footprintless::Service')}
 
@@ -27,8 +27,13 @@ eval {
 
 my $logger = Log::Any->get_logger();
 
+my $last_command;
+my $last_runner_options;
 my $command_runner = Footprintless::CommandRunner::Mock->new(
-    sub { return 0; });
+    sub { 
+        ($last_command, $last_runner_options) = @_;
+        return 0;
+    });
 
 {
     my $service = Footprintless::Service->new(
@@ -162,4 +167,26 @@ my $command_runner = Footprintless::CommandRunner::Mock->new(
     is($command_runner->get_command(), 'ssh bar "sudo -u foobar /opt/foo/bar.sh stop"', 'ssh sudo stop');
     $service->kill();
     is($command_runner->get_command(), 'ssh bar "sudo -u foobar /opt/foo/bar.sh kill"', 'ssh sudo kill');
+}
+
+{
+    my $service = Footprintless::Service->new(
+        factory(
+            {
+                service => {
+                    command => '/opt/foo/bar.sh',
+                    actions => {
+                        kill => {command => '/foo/kill'},
+                        start => {command => '/foo/start'},
+                        status => {command => '/foo/status'},
+                        stop => {command => '/foo/stop'}
+                    },
+                    pid_file => '/var/run/bar/bar.pid'
+                }
+            },
+            command_runner => $command_runner),
+        'service',
+        );
+    $service->start(runner_options => {foo => 'bar'});
+    is($last_runner_options->{foo}, 'bar', 'runner_options foo');
 }
