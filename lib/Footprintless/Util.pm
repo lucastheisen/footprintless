@@ -71,9 +71,10 @@ sub default_command_runner {
 
 sub dumper {
     require Data::Dumper;
-    my $dumper = Data::Dumper->new(\@_);
-    $dumper->Indent(1);
-    return $dumper->Dump(@_);
+    return Data::Dumper->new(\@_)
+        ->Indent(1)
+        ->Sortkeys(1)
+        ->Dump();
 }
 
 sub exit_due_to {
