@@ -36,10 +36,23 @@ sub _new {
 }
 
 sub _configure_logging {
-    my ($self, $level) = @_;
-    require Log::Any::Adapter;
-    Log::Any::Adapter->set('Stderr', 
-        log_level => Log::Any::Adapter::Util::numeric_level($level));
+    my ($self, %options) = @_;
+
+    my $log_configurator_module = footprintless()->entities()
+        ->get_entity('footprintless.log_configurator');
+    if ($log_configurator_module) {
+        my $log_configurator_path = $log_configurator_module;
+        $log_configurator_path =~ s/::/\//;
+        require "$log_configurator_path.pm"; ## no critic
+        $log_configurator_module->new()
+            ->configure(%options);
+    }
+    elsif ($options{log_level}) {
+        require Log::Any::Adapter;
+        Log::Any::Adapter->set('Stderr', 
+            log_level => Log::Any::Adapter::Util::numeric_level(
+                $options{log_level}));
+    }
 }
 
 sub footprintless {
@@ -56,9 +69,11 @@ sub get_command {
     my ($self, @args) = @_;
     my ($command, $opt, @rest) = $self->App::Cmd::get_command(@args);
 
-    if ($opt->{log}) {
-        $self->_configure_logging(delete($opt->{log}));
-    }
+    $self->_configure_logging(
+        command => $command,
+        opt => $opt,
+        rest => \@rest,
+        log_level => delete($opt->{log}));
 
     return ($command, $opt, @rest);
 }
