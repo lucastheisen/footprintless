@@ -280,6 +280,11 @@ C<Footprintless::CommandRunner>.
 Prints a dump of C<@to_dump> using C<Data::Dumper> with C<Data::Dumper::Indent>
 set to 1.
 
+=func dynamic_module_new($module_name, @new_args)
+
+Require's and creates a new instance of C<$module_name>, passing 
+C<@new_args> to the C<new> method.
+
 =func exit_due_to($reason, $verbose)
 
 If C<$reason> is an instance of 
