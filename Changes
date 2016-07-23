@@ -1,5 +1,11 @@
 Revision history for Perl module Footprintless
 
+1.05 2016-07-23
+    - added ability to configure custom resolver allowing for additional transforms
+    - made log configuration configurable in footprintless
+    - cleaned up dumper
+    - added pod documentation to tunnel
+
 1.04 2016-07-21
     - added ability to pass runner options to service
     - fixed logger message in Footprintless::_init
