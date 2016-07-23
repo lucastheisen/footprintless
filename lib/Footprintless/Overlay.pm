@@ -17,6 +17,7 @@ use Footprintless::Mixins qw (
     _sub_entity
 );
 use Footprintless::Util qw(
+    dynamic_module_new
     invalid_entity
     temp_dir
 );
@@ -133,7 +134,19 @@ sub _resolver {
     my $resolver_spec = $resolver_coordinate
         ? $self->_entity($resolver_coordinate)
         : $self->_entity();
-    return Template::Resolver->new($resolver_spec, @resolver_opts);
+
+    my $resolver;
+    my $resolver_factory = $self->_entity(
+        'footprintless.overlay.resolver_factory');
+    if ($resolver_factory) {
+        $logger->tracef("using resolver_factory: %s", $resolver_factory);
+        $resolver = dynamic_module_new($resolver_factory)
+            ->new_resolver($resolver_spec, @resolver_opts);
+    }
+    else {
+        $resolver = Template::Resolver->new($resolver_spec, @resolver_opts);
+    }
+    return $resolver;
 }
 
 sub _resolve_footprintless {
@@ -257,6 +270,33 @@ A more complex example:
         }
     }
 
+=head1 CONFIGURATION
+
+This module can optionally be configured to use a customized resolver.  To
+do so, configure a resolver factory in your entities:
+
+    footprintless => {
+        overlay => {
+            resolver_factory => 'My::ResolverFactory'
+        }
+    }
+
+The resolver factory must have a C<new_resolver> method that takes a spec and
+a list of options and returns a C<Template::Resolver>, for example:
+
+    sub new_resolver {
+        my ($self, $resolver_spec, %resolver_opts) = @_;
+        return Template::Resolver->new(
+            $resolver_spec,
+            %resolver_opts,
+            additional_transforms => {
+                random => sub {
+                    my ($resolver_self, $value) = @_;
+                    return $value . rand();
+                }
+            });
+    }
+
 =constructor new($entity, $coordinate)
 
 Constructs a new overlay configured by C<$entities> at C<$coordinate>.  
@@ -283,3 +323,4 @@ Config::Entities
 Footprintless
 Footprintless::Mixins
 Template::Overlay
+Template::Resolver

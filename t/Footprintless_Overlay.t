@@ -1,6 +1,8 @@
 use strict;
 use warnings;
 
+use lib 't/lib';
+
 use Config::Entities;
 use File::Basename;
 use File::Path qw(make_path);
@@ -15,7 +17,7 @@ use Footprintless::Util qw(
     slurp 
     spurt
 );
-use Test::More tests => 18;
+use Test::More tests => 20;
 
 BEGIN {use_ok('Footprintless::Overlay')}
 
@@ -144,6 +146,52 @@ sub temp_dirs {
     ok(-f $to_file, 'clean test to_file created');
     $overlay->clean();
     ok(!-e $to_file, 'clean test');
+}
+
+{
+    $logger->info('Verify resolver factory');
+    my ($temp_dir, $base_dir, $to_dir, $template_dir) = temp_dirs();
+    my $hostname = 'localhost';
+    my $overlay = Footprintless::Overlay->new(
+        factory({
+            system => {
+                hostname => $hostname,
+                app => {
+                    'Config::Entities::inherit' => ['hostname'],
+                    overlay => {
+                        'Config::Entities::inherit' => ['hostname', 'sudo_username'],
+                        base_dir => $base_dir,
+                        clean => ["$to_dir/"],
+                        key => 'T',
+                        os => $^O,
+                        resolver_coordinate => 'system',
+                        template_dir => $template_dir,
+                        to_dir => $to_dir
+                    },
+                    web => {
+                        'Config::Entities::inherit' => ['hostname'],
+                        https => 1,
+                        port => 8443,
+                        context_path => '/foo'
+                    },
+                },
+            },
+            footprintless => {
+                overlay => {
+                    resolver_factory => 'Footprintless::WebUrlResolverFactory'
+                }
+            }
+        }),
+        'system.app.overlay');
+    ok($overlay, 'overlay constructed with resolver factory');
+
+    my $name = 'foo';
+    my $template_file = File::Spec->catfile($template_dir, $name);
+    my $to_file = File::Spec->catfile($to_dir, $name);
+    spurt('url=[${T_web_url{app.web}}]', $template_file);
+    $overlay->update();
+    is(slurp($to_file), "url=[https://$hostname:8443/foo]", 
+        'update with resolver factory');
 }
 
 {

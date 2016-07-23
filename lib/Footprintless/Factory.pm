@@ -96,10 +96,8 @@ sub _init {
         if ($plugin_modules) {
             foreach my $plugin_module (@$plugin_modules) {
                 $logger->debugf('registering plugin %s', $plugin_module);
-                my $plugin_module_path = $plugin_module;
-                $plugin_module_path =~ s/::/\//g;
-                require "$plugin_module_path.pm"; ## no critic
-                $self->register_plugin($plugin_module->new());
+                $self->register_plugin(
+                    Footprintless::Util::dynamic_module_new($plugin_module));
             }
         }
     }

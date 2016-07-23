@@ -8,6 +8,7 @@ package Footprintless::App;
 
 use App::Cmd::Setup -app;
 use Footprintless;
+use Footprintless::Util qw(dynamic_module_new);
 use Log::Any;
 
 my $logger = Log::Any->get_logger();
@@ -41,10 +42,7 @@ sub _configure_logging {
     my $log_configurator_module = footprintless()->entities()
         ->get_entity('footprintless.log_configurator');
     if ($log_configurator_module) {
-        my $log_configurator_path = $log_configurator_module;
-        $log_configurator_path =~ s/::/\//;
-        require "$log_configurator_path.pm"; ## no critic
-        $log_configurator_module->new()
+        dynamic_module_new($log_configurator_module)
             ->configure(%options);
     }
     elsif ($options{log_level}) {

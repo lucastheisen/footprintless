@@ -14,6 +14,7 @@ our @EXPORT_OK = qw(
     agent
     clean
     default_command_runner
+    dynamic_module_new
     dumper
     exit_due_to
     extract
@@ -77,6 +78,14 @@ sub dumper {
         ->Dump();
 }
 
+sub dynamic_module_new {
+    my ($module, @args) = @_;
+    my $module_path = $module;
+    $module_path =~ s/::/\//g;
+    require "$module_path.pm"; ## no critic
+    return $module->new(@args);
+}
+
 sub exit_due_to {
     my ($dollar_at, $verbose) = @_;
     if (ref($dollar_at) 
@@ -132,10 +141,7 @@ sub factory {
     my $factory;
     my $factory_module = $entities->get_entity('footprintless.factory');
     if ($entities->get_entity('footprintless.factory')) {
-        my $factory_module_path = $factory_module;
-        $factory_module_path =~ s/::/\//;
-        require "$factory_module_path.pm"; ## no critic
-        $factory = $factory_module->new($entities, @options);
+        $factory = dynamic_module_new($factory_module, $entities, @options);
     }
     else {
         require Footprintless::Factory;
