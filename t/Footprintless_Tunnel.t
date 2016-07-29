@@ -49,6 +49,7 @@ SKIP: {
             command(
                 'echo hello', 
                 $factory->command_options(
+                    ssh => 'ssh -q -o "StrictHostKeyChecking=yes"',
                     hostname => 'localhost',
                 )
             ),
