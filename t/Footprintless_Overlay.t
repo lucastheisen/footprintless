@@ -251,7 +251,7 @@ SKIP: {
     $logger->info('Verify non-local');
     my $command_runner = default_command_runner();
     eval {
-        $command_runner->run_or_die('ssh localhost echo hello', 
+        $command_runner->run_or_die('ssh -q -o "StrictHostKeyChecking=yes" localhost echo hello', 
             {timeout => 2});
     };
     if ($@) {
