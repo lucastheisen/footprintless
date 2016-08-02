@@ -1,5 +1,12 @@
 Revision history for Perl module Footprintless
 
+1.06 2016-08-02
+    - added documentation for deploy option 'extra'
+    - add support for timeout and cookie_jar options to agent
+    - add support for extra deployment
+    - update to fix error message during testing on systems without ssh localhost key installed
+    - updated dependency on Maven::Agent
+
 1.05 2016-07-23
     - added ability to configure custom resolver allowing for additional transforms
     - made log configuration configurable in footprintless
