@@ -39,11 +39,13 @@ sub deploy {
 
     if ($options{to_dir}) {
         $self->_deploy($options{to_dir});
+        &{$options{extra}}($options{to_dir}) if ($options{extra});
     }
     else {
         $self->_local_template(
             sub {
                 $self->_deploy(@_);
+                &{$options{extra}}(@_) if ($options{extra});
             },
             rebase => $options{rebase});
     }
