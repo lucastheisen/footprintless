@@ -190,6 +190,13 @@ are:
 
 =over 4
 
+=item extra 
+
+A subroutine that is called during deployment allowing you to add to
+what is deployed before it is pushed to its destination.  This subroutine
+will be called with a single argument containing the (possibly temporary)
+directory that you can write additional files to.
+
 =item names
 
 A list of names of resources that should be deployed.  If this option is
