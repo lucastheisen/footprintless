@@ -31,9 +31,14 @@ our @EXPORT_OK = qw(
 my $logger = Log::Any->get_logger();
 
 sub agent {
+    my (%options) = @_;
     require LWP::UserAgent;
     my $agent = LWP::UserAgent->new();
     $agent->env_proxy();
+
+    $agent->timeout($options{timeout}) if (defined($options{timeout}));
+    $agent->cookie_jar($options{cookie_jar}) if (defined($options{cookie_jar}));
+
     return $agent;
 }
 
@@ -55,7 +60,9 @@ sub clean {
             $command_runner->run_or_die(
                 Footprintless::Command::batch_command(
                     Footprintless::Command::rm_command(@all_paths),
-                    Footprintless::Command::mkdir_command(@dir_paths),
+                    (@dir_paths 
+                        ? Footprintless::Command::mkdir_command(@dir_paths)
+                        : ()),
                     $options{command_options}));
         };
         if ($@) {

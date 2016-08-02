@@ -18,10 +18,10 @@ sub new {
 }
 
 sub agent {
-    my ($self) = @_;
+    my ($self, %options) = @_;
 
     unless ($self->{agent}) {
-        $self->{agent} = Footprintless::Util::agent();
+        $self->{agent} = Footprintless::Util::agent(%options);
     }
 
     return $self->{agent};
