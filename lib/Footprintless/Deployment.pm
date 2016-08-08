@@ -44,8 +44,9 @@ sub deploy {
     else {
         $self->_local_template(
             sub {
-                $self->_deploy(@_);
-                &{$options{extra}}(@_) if ($options{extra});
+                my ($to_dir, $resource_dir) = @_;
+                $self->_deploy_resources($resource_dir);
+                &{$options{extra}}($to_dir) if ($options{extra});
             },
             rebase => $options{rebase});
     }
@@ -53,7 +54,7 @@ sub deploy {
     $logger->debug("deploy complete");
 }
 
-sub _deploy {
+sub _deploy_resources {
     my ($self, $to_dir, %options) = @_;
     my $resources = $self->_sub_entity('resources', 1);
 
@@ -83,12 +84,12 @@ sub _local_template {
             my ($to_dir) = @_;
 
             my $resource_dir = $self->_sub_entity('resource_dir');
-            $to_dir = $resource_dir
+            $resource_dir = $resource_dir
                 ? File::Spec->catdir($to_dir, $resource_dir)
                 : $to_dir;
-            make_path($to_dir);
+            make_path($resource_dir);
 
-            &$local_work($to_dir);
+            &$local_work($to_dir, $resource_dir);
         },
         @options);
 }
