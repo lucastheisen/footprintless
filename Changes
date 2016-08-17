@@ -1,5 +1,8 @@
 Revision history for Perl module Footprintless
 
+1.07 2016-08-17
+    - fixed deployment extra to supply actual to_dir even if there is a resource_dir
+
 1.06 2016-08-02
     - added documentation for deploy option 'extra'
     - add support for timeout and cookie_jar options to agent
