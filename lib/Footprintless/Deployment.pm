@@ -38,7 +38,7 @@ sub deploy {
     my ($self, %options) = @_;
 
     if ($options{to_dir}) {
-        $self->_deploy($options{to_dir});
+        $self->_deploy_resources($options{to_dir});
         &{$options{extra}}($options{to_dir}) if ($options{extra});
     }
     else {

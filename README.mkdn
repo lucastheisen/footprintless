@@ -4,7 +4,7 @@ Footprintless - A utility for managing systems with minimal installs
 
 # VERSION
 
-version 1.06
+version 1.07
 
 # SYNOPSIS
 
