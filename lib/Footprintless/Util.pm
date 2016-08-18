@@ -219,7 +219,7 @@ sub spurt {
 sub temp_dir {
     require File::Temp;
     File::Temp->safe_level(File::Temp::HIGH());
-    my $temp = File::Temp->newdir();
+    my $temp = File::Temp->newdir('fpl_XXXXXXXX');
     if (!chmod(0700, $temp)) {
         croak("unable to create secure temp file");
     }
@@ -229,7 +229,7 @@ sub temp_dir {
 sub temp_file {
     require File::Temp;
     File::Temp->safe_level(File::Temp::HIGH());
-    my $temp = File::Temp->new();
+    my $temp = File::Temp->new('fpl_XXXXXXXX');
     if (!chmod(0600, $temp)) {
         croak("unable to create secure temp file");
     }
