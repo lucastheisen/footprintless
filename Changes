@@ -1,5 +1,8 @@
 Revision history for Perl module Footprintless
 
+1.08 2016-08-18
+    - changed Footprintless::agent from a singleton to a factory
+
 1.07 2016-08-17
     - fixed deployment extra to supply actual to_dir even if there is a resource_dir
 

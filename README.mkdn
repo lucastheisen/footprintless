@@ -190,9 +190,18 @@ Creates a new Footprintless factory.  Available options are:
 
 # METHODS
 
-## agent()
+## agent(%options)
 
-Returns the [agent](https://metacpan.org/pod/LWP::UserAgent) used by this instance. 
+Returns a new [agent](https://metacpan.org/pod/LWP::UserAgent) obtained from `agent` in
+[Footprintless::Util](https://metacpan.org/pod/Footprintless::Util). The supported options are:
+
+- cookie\_jar
+
+    A hashref for storing cookies.  If not supplied, cookies will be ignored.
+
+- timeout
+
+    The http request timeout.
 
 ## command\_options\_factory()
 
