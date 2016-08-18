@@ -32,6 +32,7 @@ my $logger = Log::Any->get_logger();
 
 sub agent {
     my (%options) = @_;
+
     require LWP::UserAgent;
     my $agent = LWP::UserAgent->new();
     $agent->env_proxy();
@@ -268,9 +269,22 @@ __END__
 
 This module contains common utility methods used by Footprintless.
 
-=func agent()
+=func agent(%options)
 
-Returns a new instance of C<LWP::UserAgent> configured with C<env_proxy>.
+Returns a new L<agent|LWP::UserAgent>.  By default C<env_proxy> is set.
+The supported options are:
+
+=over 4
+
+=item cookie_jar
+
+A hashref for storing cookies.  If not supplied, cookies will be ignored.
+
+=item timeout
+
+The http request timeout.
+
+=back
 
 =func clean($paths, %options)
 

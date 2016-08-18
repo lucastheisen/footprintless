@@ -19,16 +19,16 @@ sub new {
     return bless({}, shift)->_init(@_);
 }
 
+sub agent {
+    my ($self, @options) = @_;
+    $self->{factory}->agent(@options);
+}
+
 sub AUTOLOAD {
     my ($self, @args) = @_;
     my $method = $AUTOLOAD;
     $method =~ s/.*:://;
     $self->{factory}->$method(@args);
-}
-
-sub agent {
-    my ($self, @args) = @_;
-    $self->{factory}->agent(@args);
 }
 
 sub command_options_factory {
@@ -363,9 +363,22 @@ or subclass of C<Footprintless::Localhost>.
 
 =back
 
-=method agent()
+=method agent(%options)
 
-Returns the L<agent|LWP::UserAgent> used by this instance. 
+Returns a new L<agent|LWP::UserAgent> obtained from C<agent> in
+L<Footprintless::Util>. The supported options are:
+
+=over 4
+
+=item cookie_jar
+
+A hashref for storing cookies.  If not supplied, cookies will be ignored.
+
+=item timeout
+
+The http request timeout.
+
+=back
 
 =method command_options_factory()
 

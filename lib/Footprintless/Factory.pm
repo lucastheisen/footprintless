@@ -18,13 +18,9 @@ sub new {
 }
 
 sub agent {
-    my ($self, %options) = @_;
+    my ($self, @options) = @_;
 
-    unless ($self->{agent}) {
-        $self->{agent} = Footprintless::Util::agent(%options);
-    }
-
-    return $self->{agent};
+    return Footprintless::Util::agent(@options);
 }
 
 sub AUTOLOAD {
@@ -176,9 +172,22 @@ The default factory for footprintless modules.
 
 Creates a new factory configured by C<$entities>.
 
-=method agent()
+=method agent(%options)
 
-Returns the L<agent|LWP::UserAgent> used by this instance. 
+Returns a new L<agent|LWP::UserAgent> obtained from C<agent> in
+L<Footprintless::Util>. The supported options are:
+
+=over 4
+
+=item cookie_jar
+
+A hashref for storing cookies.  If not supplied, cookies will be ignored.
+
+=item timeout
+
+The http request timeout.
+
+=back
 
 =method command_options(%spec)
 
