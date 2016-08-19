@@ -1,5 +1,10 @@
 Revision history for Perl module Footprintless
 
+1.09 2016-08-19
+    - added support for extract_to in resources for Deployment
+    - fixed overlay to use dot footprintless resolver on update as well as initialize
+    - added prefix to temp_[dir/file] to provide easier cleanup in case process exits abnormally
+
 1.08 2016-08-18
     - changed Footprintless::agent from a singleton to a factory
 
