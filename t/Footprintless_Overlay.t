@@ -17,7 +17,7 @@ use Footprintless::Util qw(
     slurp 
     spurt
 );
-use Test::More tests => 20;
+use Test::More tests => 23;
 
 BEGIN {use_ok('Footprintless::Overlay')}
 
@@ -192,6 +192,58 @@ sub temp_dirs {
     $overlay->update();
     is(slurp($to_file), "url=[https://$hostname:8443/foo]", 
         'update with resolver factory');
+}
+
+{
+    $logger->info('Verify resolve .footprintless placeholders');
+    my ($temp_dir, $base_dir, $to_dir, $template_dir) = temp_dirs();
+    my $hostname = 'localhost';
+
+    my @downloads = ();
+    {
+        package Mock::ResourceManager;
+
+        sub download {
+            my ($self, @args) = @_;
+            push(@downloads, \@args);
+        }
+    }
+
+    my $overlay = Footprintless::Overlay->new(
+        factory({
+            system => {
+                hostname => $hostname,
+                app => {
+                    'Config::Entities::inherit' => ['hostname'],
+                    overlay => {
+                        'Config::Entities::inherit' => ['hostname', 'sudo_username'],
+                        base_dir => $base_dir,
+                        clean => ["$to_dir/"],
+                        key => 'T',
+                        os => $^O,
+                        resolver_coordinate => 'system',
+                        template_dir => $template_dir,
+                        to_dir => $to_dir
+                    },
+                    web => {
+                        'Config::Entities::inherit' => ['hostname'],
+                        https => 1,
+                        port => 8443,
+                        context_path => '/foo'
+                    },
+                },
+            }
+        },
+        resource_manager => bless({}, 'Mock::ResourceManager')),
+        'system.app.overlay');
+    ok($overlay, 'overlay constructed with mock resource manager');
+
+    my $dot_footprintless = File::Spec->catfile($template_dir, '.footprintless');
+    spurt('return {resources => {foo => "bar"}};', $dot_footprintless);
+    $overlay->initialize();
+    is(@downloads == 1 && $downloads[0][0], 'bar', 'bar was downloaded by initialize');
+    $overlay->update();
+    is(@downloads == 2 && $downloads[1][0], 'bar', 'bar was downloaded by update');
 }
 
 {

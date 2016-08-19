@@ -60,6 +60,18 @@ sub _dirs_template {
     &$with_dirs_work($base_dir, $template_dir, $to_dir);
 }
 
+sub _dot_footprintless_resolver {
+    my ($self) = @_;
+    return sub {
+        my ($template, $destination) = @_;
+        if ($template =~ /\/\.footprintless$/) {
+            $self->_resolve_footprintless($template, $destination);
+            return 1;
+        }
+        return 0;
+    };
+}
+
 sub _init {
     my ($self, $factory, $coordinate, %options) = @_;
     $logger->tracef("coordinate=[%s],options=[%s]",
@@ -93,15 +105,8 @@ sub initialize {
 sub _initialize {
     my ($self, $base_dir, $template_dir, $to_dir) = @_;
     $self->_overlay($base_dir)->overlay($template_dir, 
-        to => $to_dir,
-        resolver => sub {
-            my ($template, $destination) = @_;
-            if ($template =~ /\/\.footprintless$/) {
-                $self->_resolve_footprintless($template, $destination);
-                return 1;
-            }
-            return 0;
-        });
+        resolver => $self->_dot_footprintless_resolver(),
+        to => $to_dir);
 }
 
 sub _local_with_dirs_template {
@@ -120,7 +125,7 @@ sub _overlay {
     push(@overlay_opts, key => $key) if ($key);
 
     return Template::Overlay->new($base_dir, 
-        $self->_resolver(), @overlay_opts)
+        $self->_resolver(), @overlay_opts);
 }
 
 sub _resolver {
@@ -186,7 +191,8 @@ sub update {
 sub _update {
     my ($self, $base_dir, $template_dir, $to_dir) = @_;
     $logger->tracef("update to=[%s], template=[%s]", $to_dir, $template_dir);
-    $self->_overlay($to_dir)->overlay($template_dir);
+    $self->_overlay($to_dir)->overlay($template_dir,
+        resolver => $self->_dot_footprintless_resolver());
 }
 
 1;
