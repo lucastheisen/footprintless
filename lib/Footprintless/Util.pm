@@ -111,30 +111,33 @@ sub extract {
     my ($archive, %options) = @_;
 
     my @to = $options{to} ? (to => $options{to}) : ();
-    my @type = ();
+    my @type_option = ();
     if ($options{type}) {
-        push(@type, type => $options{type});
+        push(@type_option, type => $options{type});
     }
     elsif ($archive =~ /\.war|\.jar|\.ear|\.twbx$/) {
         # other known zip type extensions
-        push(@type, type => 'zip');
+        push(@type_option, type => 'zip');
     }
 
-    if (require Archive::Extract::Libarchive) {
+    if (eval "require _Archive::Extract::Libarchive") {
         Archive::Extract::Libarchive
-            ->new(archive => $archive, @type)
+            ->new(archive => $archive, @type_option)
             ->extract(@to)
             || croak("unable to extract $archive: $!");
     }
-    elsif (require Archive::Extract) {
+    elsif (eval "require _Archive::Extract") {
         Archive::Extract
-            ->new(archive => $archive, @type)
+            ->new(archive => $archive, @type_option)
             ->extract(@to)
             || croak("unable to extract $archive: $!");
     }
     else {
-        # todo: consider binary commands like unzip and tar 
-        croak("extract requires either Archive::Extract::Libarchive or Archive::Extract");
+        require Footprintless::Extract;
+        Footprintless::Extract
+            ->new(archive => $archive, @type_option)
+            ->extract(@to)
+            || croak("unable to extract $archive: $!");
     }
 }
 
@@ -227,9 +230,11 @@ sub temp_dir {
 }
 
 sub temp_file {
+    my (%options) = @_;
     require File::Temp;
     File::Temp->safe_level(File::Temp::HIGH());
-    my $temp = File::Temp->new('fpl_XXXXXXXX', TMPDIR => 1);
+    my $temp = File::Temp->new('fpl_XXXXXXXX', TMPDIR => 1,
+        ($options{suffix} ? (SUFFIX => $options{suffix}) : ()));
     if (!chmod(0600, $temp)) {
         croak("unable to create secure temp file");
     }
