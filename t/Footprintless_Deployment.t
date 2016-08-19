@@ -17,7 +17,7 @@ use Footprintless::Util qw(
 use Footprintless::Test::Util qw(
     is_empty_dir
 );
-use Test::More tests => 32;
+use Test::More tests => 33;
 
 BEGIN {use_ok('Footprintless::Deployment')}
 
@@ -227,4 +227,26 @@ SKIP: {
     ok(!-e $to_foobazwar, 'configured foobaz not deployed');
     ok(-f $alternate_to_foobazwar, 'alternate foobaz deployed');
     is(slurp($alternate_to_foobazwar), slurp($bazwar), 'alternate foobaz is baz');
+}
+
+{
+    $logger->info("test extract_to");
+    my ($temp_dir, $to_dir) = temp_dirs();
+
+    my $bazwar = File::Spec->catfile($test_dir, 'data', 'resources', 'baz.war');
+    my $to_baz = File::Spec->catfile($to_dir, 'foo', 'baz');
+
+    my $deployment = Footprintless::Deployment->new(
+        factory('foo', $to_dir, undef,
+            baz => {
+                url => $bazwar,
+                extract_to => 'foo/baz'
+            }),
+        'foo.deployment');
+    $deployment->deploy();
+
+    ok(-f File::Spec
+        ->catfile(
+            $to_baz, 'META-INF', 'maven', 'com.pastdev', 'baz', 'pom.xml'
+        ), 'baz pom.xml exists');
 }

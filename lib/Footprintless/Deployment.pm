@@ -13,6 +13,7 @@ use File::Path qw(
 use Footprintless::Mixins qw (
     _clean
     _download
+    _extract_resource
     _resource
     _sub_entity
 );
@@ -38,14 +39,16 @@ sub deploy {
     my ($self, %options) = @_;
 
     if ($options{to_dir}) {
-        $self->_deploy_resources($options{to_dir});
+        $self->_deploy_resources($options{to_dir}, 
+            ($options{names} ? (names => $options{names}) :()));
         &{$options{extra}}($options{to_dir}) if ($options{extra});
     }
     else {
         $self->_local_template(
             sub {
                 my ($to_dir, $resource_dir) = @_;
-                $self->_deploy_resources($resource_dir);
+                $self->_deploy_resources($resource_dir,
+                    ($options{names} ? (names => $options{names}) :()));
                 &{$options{extra}}($to_dir) if ($options{extra});
             },
             rebase => $options{rebase});
@@ -63,7 +66,16 @@ sub _deploy_resources {
         : keys(%$resources);
 
     $logger->debugf("deploy %s to %s", \@names, $to_dir);
-    $self->_download($resources->{$_}, $to_dir) foreach (@names);
+    foreach my $resource_name (@names) {
+        my $resource = $resources->{$resource_name};
+        if (ref($resource) eq 'HASH' && $resource->{extract_to}) {
+            $self->_extract_resource($resource,
+                File::Spec->catdir($to_dir, $resource->{extract_to}));
+        }
+        else {
+            $self->_download($resource, $to_dir);
+        }
+    }
 }
 
 sub _init {
@@ -155,6 +167,10 @@ A more complex situation, perhaps a tomcat instance:
                 coordinate => 'com.pastdev:baz:war:1.0',
                 'as' => 'foo.war',
                 type => 'maven'
+            },
+            foo => {
+                url => 'http://pastdev.com/resources/foo.war',
+                extract_to => 'ROOT'
             }
         },
         to_dir => '/opt/tomcat/webapps'
