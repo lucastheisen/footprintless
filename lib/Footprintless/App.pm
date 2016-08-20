@@ -8,7 +8,10 @@ package Footprintless::App;
 
 use App::Cmd::Setup -app;
 use Footprintless;
-use Footprintless::Util qw(dynamic_module_new);
+use Footprintless::Util qw(
+    dumper
+    dynamic_module_new
+);
 use Log::Any;
 
 my $logger = Log::Any->get_logger();
@@ -64,6 +67,7 @@ sub global_opt_spec {
 sub footprintless_plugin_search_paths {
     my ($self) = @_;
 
+    print("REMOVE ME: self is: ", dumper($self), "\n");
     unless ($self->{plugin_search_paths}) {
         my @paths = ();
         foreach my $plugin ($self->footprintless()->plugins()) {
