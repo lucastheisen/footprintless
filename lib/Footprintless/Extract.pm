@@ -3,9 +3,16 @@ use warnings;
 
 package Footprintless::Extract;
 
+# ABSTRACT: Extracts data from archives
+# PODNAME: Footprintless::Extract
+#
+use Carp;
 use Cwd;
 use File::Path qw(make_path);
 use File::Spec;
+use Log::Any;
+
+my $logger = Log::Any->get_logger();
 
 sub new {
     return bless({}, shift)->_init(@_);
@@ -31,11 +38,14 @@ sub extract {
     my $error = $@;
     chdir($current_dir);
     die($error) if ($error);
+
+    return 1;
 }
 
 sub _init {
     my ($self, %options) = @_;
 
+    croak('archive required') unless ($options{archive});
     $self->{archive} = $options{archive};
     
     my $dot_extension = $options{type} ? ".$options{type}" : $self->{archive};
@@ -54,52 +64,94 @@ sub _init {
 
 sub _untar {
     my ($archive, $to) = @_;
+    $logger->tracef('untar [%s] to [%s]', $archive, $to);
     require Archive::Tar;
     Archive::Tar->new($archive)->extract();
 }
 
 sub _unzip {
     my ($archive, $to) = @_;
+    $logger->tracef('unzip [%s] to [%s]', $archive, $to);
     require IO::Uncompress::Unzip;
 
-    die 'Need a archive argument' unless defined $archive;
-    $to = "." unless defined $to;
-
-    my $u = IO::Uncompress::Unzip->new($archive)
-        or die "Cannot open $archive: $IO::Uncompress::Unzip::UnzipError";
+    my $unzip = IO::Uncompress::Unzip->new($archive)
+        || croak("unable to open $archive: $IO::Uncompress::Unzip::UnzipError");
 
     my $status;
-    for ($status = 1; $status > 0; $status = $u->nextStream()) {
-        my $header = $u->getHeaderInfo();
-        my (undef, $path, $name) = File::Spec->splitpath($header->{Name});
-        my $destdir = "$to/$path";
+    eval {
+        for ($status = 1; $status > 0; $status = $unzip->nextStream()) {
+            my $header = $unzip->getHeaderInfo();
+            my (undef, $path, $name) = File::Spec->splitpath($header->{Name});
+            my $dest_dir = File::Spec->catdir($to, $path);
 
-        unless (-d $destdir) {
-            make_path($destdir) or die "Couldn't mkdir $destdir: $!";
+            unless (-d $dest_dir) {
+                make_path($dest_dir) || croak("unable to create dir $dest_dir: $!");
+            }
+
+            unless($name) {
+                last if ($status < 0);
+                next;
+            }
+
+            my $dest_file = File::Spec->catfile($dest_dir, $name);
+            my $buffer;
+            my $file = IO::File->new($dest_file, "w")
+                || croak("unable to create file $dest_file: $!");
+            while (($status = $unzip->read($buffer)) > 0) {
+                $file->write($buffer);
+            }
+            $file->close();
+            my $stored_time = $header->{Time};
+            utime($stored_time, $stored_time, $dest_file)
+                || croak("couldn't set utime on $dest_file: $!");
         }
-
-        if ($name =~ m!/$!) {
-            last if $status < 0;
-            next;
-        }
-
-        my $destfile = "$to/$path/$name";
-        my $buff;
-        my $fh = IO::File->new($destfile, "w")
-            or die "Couldn't write to $destfile: $!";
-        while (($status = $u->read($buff)) > 0) {
-            $fh->write($buff);
-        }
-        $fh->close();
-        my $stored_time = $header->{'Time'};
-        utime ($stored_time, $stored_time, $destfile)
-            or die "Couldn't touch $destfile: $!";
-    }
-
-    die "Error processing $archive $!\n"
-    if $status < 0 ;
-
+        croak("error processing $archive: $!") if ($status < 0);
+    };
+    my $error = $@;
+    $unzip->close();
+    die($error) if ($error);
     return;
 }
 
 1;
+
+__END__
+=head1 DESCRIPTION
+
+Provides a built in library for extracting data from archives.  It 
+presents an interface compatible with C<Archive::Extract> for the 
+functions used by C<Footprintless>.
+
+=constructor new(archive => $archive, %options)
+
+Constructs a new instance.  Note that C<archive => $archive> is 
+I<REQUIRED> in order to provide a interface compatible with 
+C<Archive::Extract>.  The available options are:
+
+=over 4
+
+=item type
+
+The type of archive.  The supported types are C<tar>, C<tgz>, and C<zip>.
+If not provided, the file extension will be used to determine the type.
+
+=back
+
+=method extract(%options)
+
+Returns a I<truthy> value if C<$hostname> is an alias for localhost.
+
+=over 4
+
+=item to
+
+The destination directory to extract into.  If not supplied, C<Cwd::getcwd>
+will be used.
+
+=back
+
+=head1 SEE ALSO
+
+Archive::Extract
+Cwd::getcwd
+Footprintless

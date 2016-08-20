@@ -29,6 +29,7 @@ our @EXPORT_OK = qw(
 );
 
 my $logger = Log::Any->get_logger();
+my $extract_impl;
 
 sub agent {
     my (%options) = @_;
@@ -120,25 +121,9 @@ sub extract {
         push(@type_option, type => 'zip');
     }
 
-    if (eval "require _Archive::Extract::Libarchive") {
-        Archive::Extract::Libarchive
-            ->new(archive => $archive, @type_option)
-            ->extract(@to)
-            || croak("unable to extract $archive: $!");
-    }
-    elsif (eval "require _Archive::Extract") {
-        Archive::Extract
-            ->new(archive => $archive, @type_option)
-            ->extract(@to)
-            || croak("unable to extract $archive: $!");
-    }
-    else {
-        require Footprintless::Extract;
-        Footprintless::Extract
-            ->new(archive => $archive, @type_option)
-            ->extract(@to)
-            || croak("unable to extract $archive: $!");
-    }
+    return _new_extract(archive => $archive, @type_option)
+        ->extract(@to)
+        || croak("unable to extract $archive: $!");
 }
 
 sub factory {
@@ -168,6 +153,29 @@ sub invalid_entity {
     require Footprintless::InvalidEntityException;
     die(Footprintless::InvalidEntityException->new(
         $coordinate, $message || "$coordinate required"));
+}
+
+sub _new_extract {
+    my (@args) = @_;
+
+    unless ($extract_impl) {
+        eval {
+            require Archive::Extract::Libarchive;
+            $extract_impl = 'Archive::Extract::Libarchive';
+        };
+    }
+    unless ($extract_impl) {
+        eval {
+            require Archive::Extract;
+            $extract_impl = 'Archive::Extract';
+        };
+    }
+    unless ($extract_impl) {
+        require Footprintless::Extract;
+        $extract_impl = 'Footprintless::Extract';
+    }
+
+    return $extract_impl->new(@args);
 }
 
 sub rebase {

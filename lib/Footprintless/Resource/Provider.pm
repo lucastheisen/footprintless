@@ -19,23 +19,15 @@ sub new {
 }
 
 sub download {
-    my ($self, $resource, %options) = @_;
+    my ($self, $resource, @options) = @_;
 
     my $ref = ref($resource);
     $resource = $self->resource($resource) if (!$ref || $ref eq 'HASH');
 
-    unless ($options{to}) {
-        if ($resource->get_url() =~ /.*(\.\S*)$/) {
-            $logger->tracef('preserving extension [%s] for resource %s',
-                $1, $resource);
-            $options{to} = temp_file(suffix => $1);
-        }
-    }
-
     croak("invalid resource [$resource]") 
         unless ($resource->isa('Footprintless::Resource'));
 
-    return $self->_download($resource, %options);
+    return $self->_download($resource, @options);
 }
 
 sub _download {

@@ -9,9 +9,14 @@ package Footprintless::Resource::UrlProvider;
 use parent qw(Footprintless::Resource::Provider);
 
 use Carp;
-use File::Temp;
 use Footprintless::Resource::Url;
+use Footprintless::Util qw(
+    temp_file
+);
+use Log::Any;
 use URI;
+
+my $logger = Log::Any->get_logger();
 
 sub _download {
     my ($self, $resource, %options) = @_;
@@ -25,7 +30,14 @@ sub _download {
         }
     }
     else {
-        $file = Footprintless::Resource::UrlProvider::DownloadedFile->new();
+        my @suffix;
+        if ($resource->get_url() =~ /.*(\.\S*)$/) {
+            $logger->tracef('preserving extension [%s] for resource %s',
+                $1, $resource);
+            push(@suffix, suffix => $1);
+        }
+
+        $file = temp_file(@suffix);
     }
 
     my $response = $self->{agent}->get($resource->get_uri(), 
@@ -59,27 +71,6 @@ sub supports {
 
     return 1;
 } 
-
-package Footprintless::Resource::UrlProvider::DownloadedFile;
-
-# Wraps a temp file to hold a reference so as to keep the destructor from
-# getting called.  It will provide the filename when used as a string.
-
-use overload q{""} => 'filename', fallback => 1;
-
-sub new {
-    my $self = bless({}, shift);
-    my $file = File::Temp->new();
-
-    $self->{handle} = $file;
-    $self->{name} = $file->filename();
-
-    return $self;
-}
-
-sub filename {
-    return $_[0]->{name};
-}
 
 1;
 

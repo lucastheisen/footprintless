@@ -4,7 +4,7 @@ Footprintless - A utility for managing systems with minimal installs
 
 # VERSION
 
-version 1.09
+version 1.10
 
 # SYNOPSIS
 
@@ -330,7 +330,7 @@ for `$coordinate`.
 
 # AUTHOR
 
-Lucas Theisen <lucastheisen@pastdev.com>
+Lucas Theisen &lt;lucastheisen@pastdev.com>
 
 # COPYRIGHT AND LICENSE
 

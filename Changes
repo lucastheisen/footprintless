@@ -1,5 +1,8 @@
 Revision history for Perl module Footprintless
 
+1.10 2016-08-20
+    - added Footprintless::Extract implementation
+
 1.09 2016-08-19
     - added support for extract_to in resources for Deployment
     - fixed overlay to use dot footprintless resolver on update as well as initialize
