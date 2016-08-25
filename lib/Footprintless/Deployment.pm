@@ -69,10 +69,12 @@ sub _deploy_resources {
     foreach my $resource_name (@names) {
         my $resource = $resources->{$resource_name};
         if (ref($resource) eq 'HASH' && $resource->{extract_to}) {
-            $self->_extract_resource($resource,
-                File::Spec->catdir($to_dir, $resource->{extract_to}));
+            my $extract_dir = File::Spec->catdir($to_dir, $resource->{extract_to});
+            $logger->tracef('extract [%s] to [%s]', $resource, $to_dir);
+            $self->_extract_resource($resource, $extract_dir);
         }
         else {
+            $logger->tracef('download [%s] to [%s]', $resource, $to_dir);
             $self->_download($resource, $to_dir);
         }
     }
