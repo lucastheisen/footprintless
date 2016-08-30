@@ -9,7 +9,11 @@ package Footprintless::App::Command;
 use parent qw(App::Cmd::Command);
 
 sub description {
-    my ($class) = @_;
+    return $_[0]->_pod('OPTIONS', 'ACTIONS');
+}
+
+sub _pod {
+    my ($class, @sections) = @_;
     $class = ref $class if ref $class;
      
     #i classname to filename
@@ -27,7 +31,7 @@ sub description {
         -output => $output,
         -exit => "NOEXIT", 
         -verbose => 99,
-        -sections => ["DESCRIPTION", "COORDINATE", "ACTIONS"],
+        -sections => \@sections,
         #indent => 0
     );
     $descr =~ s/Description:\n//mg;
@@ -37,12 +41,17 @@ sub description {
 }
 
 sub leader_text {
-    return $_[0]->usage_desc();
+    return $_[0]->usage_desc() . "\n\n" . $_[0]->_pod('DESCRIPTION');
 }
 
 sub usage {
     my ($self) = @_;
     return $self; 
+}
+
+sub usage_error {
+    my ($self, $error) = @_;
+    die("Error: $error\n\n" . $self->leader_text());
 }
 
 1;

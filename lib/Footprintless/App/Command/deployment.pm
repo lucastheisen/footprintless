@@ -26,6 +26,7 @@ sub _configure_logging {
 
 sub execute {
     my ($self, $opts, $args) = @_;
+    my ($coordinate, $action, @rest) = @$args;
 
     if ($opts->{log}) {
         $self->_configure_logging($opts->{log});
@@ -66,7 +67,7 @@ sub opt_spec {
 }
 
 sub usage_desc { 
-    return "fpl %o [COORDINATE] [ACTION]";
+    return "fpl deployment <COORDINATE> <ACTION> [OPTIONS]";
 }
 
 sub validate_args {
@@ -90,19 +91,51 @@ __END__
 
 =head1 SYNOPSIS
 
-  fpl overlay project.environment.component.overlay clean
-  fpl overlay project.environment.component.overlay initialize
-  fpl overlay project.environment.component.overlay update
-  fpl overlay project.environment.component.overlay # same as update
+    fpl deployment project.environment.component.deployment clean
+    fpl deployment project.environment.component.deployment deploy
 
 =head1 DESCRIPTION
 
-Performs actions on an overlay.  The available actions are:
+Performs actions on an deployment.  The available actions are:
 
-    clean        removes all files/folders handled by this overlay
-    initialize   clean, then combine the base files and the processed template
-                 files, then deploy
-    update       process the template files, then deploy
+    clean        removes all files/folders handled by this deployment
+    deploy       deploys all resources handled by this deployment
 
-If no action is specified, C<update> is implied.  For detailed configuration 
-see L<Footprintless::Overlay>. 
+=head1 OPTIONS
+
+=over 4
+
+=item --help
+
+Print help content
+
+=item --log <LEVEL>
+
+Set the level at which log output will be printed to STDERR
+
+=back
+
+=head1 ACTIONS
+
+=head2 clean
+
+Cleans out all the paths from the C<clean> section of the entity.  Be careful
+to specify a trailing slash for all directories or it will be treated as
+a file and the clean will fail.
+
+=head2 deploy [OPTS]
+
+Deploys all resources from the C<resources> section of the entity to the 
+directory specified by the C<to_dir> of the entity.
+
+=over 4
+
+=item --clean
+
+If specified a clean action will be performed before the deploy.
+
+=back
+
+=head1 SEE ALSO
+
+Footprintless::Deployment

@@ -80,7 +80,7 @@ sub opt_spec {
 }
 
 sub usage_desc { 
-    return "fpl log [COORDINATE] <ACTION> [OPTIONS]" 
+    return "fpl log <COORDINATE> [ACTION] [OPTIONS]" 
 }
 
 sub validate_args {
@@ -124,35 +124,34 @@ are:
 If no action is specified, C<follow> is implied.  For detailed configuration 
 see L<Footprintless::Log>. 
 
-=head1 COORDINATE
+=head1 OPTIONS
 
-Requires a log entity coordinate.  A log entity is a string representing
-the path to the log.  For example:
+=over 4
 
-    foo => {
-        logs => {
-            app => '/foo/bar/logs/app.out',
-            service => '/foo/bar/logs/service.log'
-        }
-    }
+=item --help
 
-has 2 log entities: C<foo.logs.app>, and C<foo.logs.service>.
+Print help content
+
+=item --log <LEVEL>
+
+Set the level at which log output will be printed to STDERR
+
+=back
 
 =head1 ACTIONS
 
-All actions support the following options:
+=head2 cat [OPTS]
+
+Prints the entire file
 
 =over 4
 
 =item --arg <ARG>
 
-An argument to be passed through to the actual command invoked by the action
+An argument to be passed through to the actual command invoked by the action.
+Multiple instances are allowed.
 
 =back
-
-=head2 cat [OPTS]
-
-Prints the entire file
 
 =head2 follow [OPTS]
 
@@ -161,20 +160,56 @@ provided, the command will watch indefinitely.
 
 =over 4
 
+=item --arg <ARG>
+
+An argument to be passed through to the actual command invoked by the action.
+Multiple instances are allowed.
+
 =item --until <PATTERN>
 
 Exit the command once C<PATTERN> is seen
 
 =back
 
-=head2 grep
+=head2 grep [OPTS]
 
 Search for specific content in the file, and prints it.
 
-=head2 head     
+=over 4
+
+=item --arg <ARG>
+
+An argument to be passed through to the actual command invoked by the action.
+Multiple instances are allowed.
+
+=back
+
+=head2 head [OPTS]
 
 Prints from the beginning of the file
 
-=head2 tail     
+=over 4
+
+=item --arg <ARG>
+
+An argument to be passed through to the actual command invoked by the action.
+Multiple instances are allowed.
+
+=back
+
+=head2 tail [OPTS]
 
 Prints from the end of the file
+
+=over 4
+
+=item --arg <ARG>
+
+An argument to be passed through to the actual command invoked by the action.
+Multiple instances are allowed.
+
+=back
+
+=head1 SEE ALSO
+
+Footprintless::Log

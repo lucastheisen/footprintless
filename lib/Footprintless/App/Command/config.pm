@@ -92,7 +92,7 @@ sub opt_spec {
 }
 
 sub usage_desc { 
-    return "fpl %o [COORDINATE]" 
+    return "fpl config [COORDINATE] [OPTIONS]" 
 }
 
 sub validate_args {
@@ -112,7 +112,20 @@ __END__
 
 =head1 DESCRIPTION
 
-Prints out the config at the specified coordinate.  The supported formats are:
+Prints out the config at the specified coordinate.
+
+=head1 COORDINATE
+
+Coordinate is optional.  If not supplied, the entire root entitie will be printed.
+Otherwise, the entity at the supplied coordinate will be printed.
+
+=head1 OPTIONS
+
+=over 4
+
+=item --format
+
+Specifies the output format for the entity data.  The avalable values are:
 
     dumper      Same as dumper1
     dumper0     Perl Data::Dumper without newlines
@@ -127,3 +140,17 @@ Prints out the config at the specified coordinate.  The supported formats are:
     properties  Java properties format alphabetically sorted (EXPERIMENTAL)
 
 If no format is specified, dumper1 is implied.
+
+=item --help
+
+Print help content
+
+=item --log <LEVEL>
+
+Set the level at which log output will be printed to STDERR
+
+=back
+
+=head1 SEE ALSO
+
+Config::Entities
