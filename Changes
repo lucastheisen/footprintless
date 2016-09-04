@@ -1,4 +1,8 @@
 Revision history for Perl module Footprintless
+ 
+1.11 ??????????
+    - added configurable tries and wait_seconds for tunnel startup
+    - modified tunnel init to allow options to override entity for config
 
 1.10 2016-08-20
     - added Footprintless::Extract implementation

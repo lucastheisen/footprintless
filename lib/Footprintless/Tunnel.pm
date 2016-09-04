@@ -102,23 +102,26 @@ sub _init {
     $self->{coordinate} = $coordinate;
 
     my $entity = $self->_entity($coordinate);
-    $self->{ssh} = $entity->{ssh} || $options{ssh} || 'ssh -q';
-    $self->{local_hostname} = $entity->{local_hostname} 
-        || $options{local_hostname};
-    $self->{local_port} = $entity->{local_port} || $options{local_port};
-    $self->{tunnel_hostname} = $entity->{tunnel_hostname} 
-        || $options{tunnel_hostname};
-    $self->{tunnel_username} = $entity->{tunnel_username} 
-        || $options{tunnel_username};
-    $self->{destination_hostname} = $entity->{destination_hostname} 
-        || $options{destination_hostname};
-    $self->{destination_port} = $entity->{destination_port} 
-        || $options{destination_port};
-    $self->{control_socket_dir} = $entity->{control_socket_dir}
-        || $options{control_socket_dir}
+    $self->{ssh} = $options{ssh} || $entity->{ssh} || 'ssh -q';
+    $self->{local_hostname} = $options{local_hostname}
+        || $entity->{local_hostname};
+    $self->{local_port} = $options{local_port} || $entity->{local_port};
+    $self->{tunnel_hostname} = $options{tunnel_hostname}
+        || $entity->{tunnel_hostname};
+    $self->{tunnel_username} = $options{tunnel_username}
+        || $entity->{tunnel_username};
+    $self->{destination_hostname} = $options{destination_hostname}
+        || $entity->{destination_hostname};
+    $self->{destination_port} = $options{destination_port} 
+        || $entity->{destination_port};
+    $self->{control_socket_dir} = $options{control_socket_dir}
+        || $entity->{control_socket_dir}
         || File::Spec->catdir(
             ($ENV{HOME} ? $ENV{HOME} : $ENV{USERPROFILE}),
             '.ssh', 'control_socket' );
+    $self->{tries} = $options{tries} || $entity->{tries} || 10;
+    $self->{wait_seconds} = $options{wait_seconds} || 
+        $entity->{wait_seconds} || 1;
 
     return $self;
 }
@@ -138,7 +141,7 @@ sub is_open {
 }
 
 sub open {
-    my ($self) = @_;
+    my ($self, %options) = @_;
 
     if (!$self->{local_port}) {
         $self->{local_port} = $self->_find_port();
@@ -156,14 +159,15 @@ sub open {
     }
     
     my $open = 0;
-    my $remaining_tries = 10;
+    my $remaining_tries = $options{tries} || $self->{tries};
+    my $wait_seconds = $options{wait_seconds} || $self->{wait_seconds};
     while ($remaining_tries-- > 0) {
         if ($self->is_open()) {
             $open = 1;
             last;
         }
         $logger->tracef('not yet open, %s tries remaining. sleeping...', $remaining_tries);
-        sleep(1);
+        sleep($wait_seconds);
     }
     
     croak('failed to open tunnel') if (!$open);
@@ -214,7 +218,9 @@ This module provides tunneling over ssh
         tunnel_usename => 'fred',
         destination_hostname => 'baz',
         destination_port => 5678,
-        control_socket_dir => '/home/me/.ssh/control_socket'
+        control_socket_dir => '/home/me/.ssh/control_socket',
+        tries => 10, 
+        wait_seconds => 1, 
     }
 
 =constructor new($entity, $coordinate, %options)
@@ -237,9 +243,23 @@ Returns the port used to access the tunnel.
 
 Returns a I<truthy> value if the tunnel is open.
 
-=method open()
+=method open([%options])
 
-Opens the tunnel.
+Opens the tunnel.  The available options are:
+
+=over 4
+
+=item tries <COUNT>
+
+Number of times to check if the connection is open before giving up.
+Defaults to 10.
+
+=item wait_seconds <SECONDS>
+
+Number of seconds to wait between each check to see if the connection 
+is open.  Defaults to 1.
+
+=back
 
 =head1 SEE ALSO
 
