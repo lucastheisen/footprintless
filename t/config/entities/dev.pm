@@ -25,11 +25,7 @@ return {
                 "$foo_tomcat_directory/work/",
             ],
             resources => {
-                bar => {
-                    type => 'maven', 
-                    coordinate => 'com.pastdev:bar:war:1.0.0', 
-                    'as' => 'bar.war'
-                },
+                bar => "$properties{'dev.foo.deployment.resources.dir'}/bar.war",
                 baz => "$properties{'dev.foo.deployment.resources.dir'}/baz.war"
             },
             to_dir => "$foo_tomcat_directory/webapps",
