@@ -6,6 +6,8 @@ package Footprintless::Tunnel;
 # ABSTRACT: Provides tunneling over ssh
 # PODNAME: Footprintless::Tunnel
 
+use parent qw(Footprintless::MixableBase);
+
 use Carp;
 use File::Path qw(make_path);
 use File::Spec;
@@ -20,10 +22,6 @@ use POSIX ":sys_wait_h";
 my $logger = Log::Any->get_logger();
 
 my $number = 0;
-
-sub new {
-    return bless( {}, shift)->_init(@_);
-}
 
 sub _build_command {
     my ($self, $command) = @_;
@@ -94,14 +92,9 @@ sub get_local_port {
 }
 
 sub _init {
-    my ($self, $factory, $coordinate, %options) = @_;
-    $logger->tracef("coordinate=[%s],options=[%s]",
-        $coordinate, \%options);
+    my ($self, %options) = @_;
 
-    $self->{factory} = $factory;
-    $self->{coordinate} = $coordinate;
-
-    my $entity = $self->_entity($coordinate);
+    my $entity = $self->_entity($self->{coordinate});
     $self->{ssh} = $options{ssh} || $entity->{ssh} || 'ssh -q';
     $self->{local_hostname} = $options{local_hostname}
         || $entity->{local_hostname};

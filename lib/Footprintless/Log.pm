@@ -6,6 +6,8 @@ package Footprintless::Log;
 # ABSTRACT: A log manager
 # PODNAME: Footprintless::Log
 
+use parent qw(Footprintless::MixableBase);
+
 use Carp;
 use Footprintless::Command qw(
     command
@@ -13,6 +15,9 @@ use Footprintless::Command qw(
 );
 use Footprintless::CommandOptionsFactory;
 use Footprintless::Localhost;
+use Footprintless::Mixins qw(
+    _entity
+);
 use Footprintless::Util qw(
     dumper
     invalid_entity
@@ -20,10 +25,6 @@ use Footprintless::Util qw(
 use Log::Any;
 
 my $logger = Log::Any->get_logger();
-
-sub new {
-    return bless({}, shift)->_init(@_);
-}
 
 sub _action_args {
     my ($args) = @_;
@@ -85,11 +86,9 @@ sub head {
 }
 
 sub _init {
-    my ($self, $factory, $coordinate, %options) = @_;
-    $logger->tracef("coordinate=[%s]\noptions=[%s]", $coordinate, \%options);
+    my ($self, %options) = @_;
 
-    $self->{entity} = $factory->entities();
-    $self->{spec} = $self->{entity}->get_entity($coordinate);
+    $self->{spec} = $self->_entity($self->{coordinate}, 1);
 
     # Allow string, hashref with file key, or object
     my $ref = ref($self->{spec});
@@ -99,7 +98,7 @@ sub _init {
                 $self->{log_file} = $self->{spec}{file};
             }
             else {
-                invalid_entity($coordinate,
+                invalid_entity($self->{coordinate},
                     "must be file, or hashref with 'file' key");
             }
         }
@@ -107,7 +106,7 @@ sub _init {
             $self->{log_file} = $self->{spec};
         }
         else {
-            invalid_entity($coordinate, 
+            invalid_entity($self->{coordinate}, 
                 "must be file, or hashref with 'file' key");
         }
     }
@@ -115,10 +114,9 @@ sub _init {
         $self->{log_file} = $self->{spec};
     }
 
-    $self->{factory} = $factory;
-    $self->{command_runner} = $factory->command_runner();
-    $self->{command_options} = $factory->command_options(%{
-            $self->{entity}->fill($coordinate,
+    $self->{command_runner} = $self->{factory}->command_runner();
+    $self->{command_options} = $self->{factory}->command_options(%{
+            $self->{factory}->entities()->fill($self->{coordinate},
                 {
                     hostname => undef,
                     ssh => undef,

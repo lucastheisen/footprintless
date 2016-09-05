@@ -6,6 +6,8 @@ package Footprintless::Service;
 # ABSTRACT: Performs an action on a service.
 # PODNAME: Footprintless::Service
 
+use parent qw(Footprintless::MixableBase);
+
 use Carp;
 use Footprintless::Command qw(
     batch_command
@@ -14,16 +16,17 @@ use Footprintless::Command qw(
 use Footprintless::CommandOptionsFactory;
 use Footprintless::InvalidEntityException;
 use Footprintless::Localhost;
+use Footprintless::Mixins qw(
+    _command_options
+    _entity
+    _run_or_die
+);
 use Footprintless::Util qw(
     invalid_entity
 );
 use Log::Any;
 
 my $logger = Log::Any->get_logger();
-
-sub new {
-    return bless({}, shift)->_init(@_);
-}
 
 sub kill {
     my ($self, %options) = @_;
@@ -82,7 +85,7 @@ sub execute {
         ? $options{runner_options}
         : {out_handle => \*STDOUT};
 
-    $self->{command_runner}->run_or_die(
+    $self->_run_or_die(
         command(
             $self->_command($action),
             $self->{command_options}),
@@ -90,16 +93,11 @@ sub execute {
 }
 
 sub _init {
-    my ($self, $factory, $coordinate, %options) = @_;
-    $logger->tracef("coordinate=[%s]\noptions=[%s]", $coordinate, \%options);
+    my ($self, %options) = @_;
 
-    $self->{factory} = $factory;
-    $self->{coordinate} = $coordinate;
-
-    $self->{entity} = $factory->entities();
-    $self->{spec} = $self->{entity}->get_entity($coordinate);
-    $self->{command_runner} = $factory->command_runner();
-    $self->{command_options} = $factory->command_options(%{$self->{spec}});
+    $self->{entity} = $self->{factory}->entities();
+    $self->{spec} = $self->_entity($self->{coordinate}, 1);
+    $self->{command_options} = $self->_command_options();
 
     return $self;
 }

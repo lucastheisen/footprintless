@@ -6,6 +6,8 @@ package Footprintless::Deployment;
 # ABSTRACT: A deployment manager
 # PODNAME: Footprintless::Deployment
 
+use parent qw(Footprintless::MixableBase);
+
 use Carp;
 use File::Path qw(
     make_path
@@ -25,10 +27,6 @@ use Footprintless::Util qw(
 use Log::Any;
 
 my $logger = Log::Any->get_logger();
-
-sub new {
-    return bless({}, shift)->_init(@_);
-}
 
 sub clean {
     my ($self, @options) = @_;
@@ -78,17 +76,6 @@ sub _deploy_resources {
             $self->_download($resource, $to_dir);
         }
     }
-}
-
-sub _init {
-    my ($self, $factory, $coordinate, %options) = @_;
-    $logger->tracef("coordinate=[%s]\noptions=[%s]",
-        $coordinate, \%options);
-
-    $self->{factory} = $factory;
-    $self->{coordinate} = $coordinate;
-
-    return $self;
 }
 
 sub _local_template {

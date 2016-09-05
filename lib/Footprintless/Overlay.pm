@@ -6,6 +6,8 @@ package Footprintless::Overlay;
 # ABSTRACT: An overlay manager
 # PODNAME: Footprintless::Overlay
 
+use parent qw(Footprintless::MixableBase);
+
 use Carp;
 use Footprintless::Mixins qw (
     _clean
@@ -28,10 +30,6 @@ use Template::Resolver;
 use Template::Overlay;
 
 my $logger = Log::Any->get_logger();
-
-sub new {
-    return bless({}, shift)->_init(@_);
-}
 
 sub clean {
     my ($self) = @_;
@@ -70,17 +68,6 @@ sub _dot_footprintless_resolver {
         }
         return 0;
     };
-}
-
-sub _init {
-    my ($self, $factory, $coordinate, %options) = @_;
-    $logger->tracef("coordinate=[%s],options=[%s]",
-        $coordinate, \%options);
-
-    $self->{factory} = $factory;
-    $self->{coordinate} = $coordinate;
-
-    return $self;
 }
 
 sub initialize {
