@@ -6,72 +6,17 @@ package Footprintless::App::Command::overlay;
 # ABSTRACT: Performs an action on an overlay.
 # PODNAME: Footprintless::App::Command::overlay
 
-use Carp;
-use Footprintless::App -command;
-use Log::Any;
-use Template::Overlay;
-use Template::Resolver;
+use parent qw(Footprintless::App::ActionCommand);
 
-my $logger = Log::Any->get_logger();
+my %actions = (
+    'clean' => 'Footprintless::App::Command::overlay::clean',
+    'initialize' => 'Footprintless::App::Command::overlay::initialize',
+    'update' => 'Footprintless::App::Command::overlay::update'
+);
 
-sub _configure_logging {
-    my ($self, $level) = @_;
-    require Log::Any::Adapter;
-    Log::Any::Adapter->set('Stderr', 
-        log_level => Log::Any::Adapter::Util::numeric_level($level));
-}
-
-sub execute {
-    my ($self, $opts, $args) = @_;
-
-    if ($opts->{log}) {
-        $self->_configure_logging($opts->{log});
-    }
-
-    if ($self->{action} eq 'clean') {
-        $logger->info('Performing clean...');
-        $self->{overlay}->clean();
-    }
-    elsif ($self->{action} eq 'initialize') {
-        $logger->info('Performing initialize...');
-        $self->{overlay}->initialize();
-    }
-    elsif ($self->{action} eq 'update') {
-        $logger->info('Performing update...');
-        $self->{overlay}->update();
-    }
-    else {
-        croak("whoops, validation is broken, fix it");
-    }
-
-    $logger->info('Done...');
-}
-
-sub opt_spec {
-    return (
-        ["log=s", "will set the log level",],
-    );
-}
-
-sub usage_desc { 
-    return "fpl overlay [COORDINATE] [ACTION] %o";
-}
-
-sub validate_args {
-    my ($self, $opts, $args) = @_;
-    my ($coordinate, $action) = @$args;
-
-    $self->usage_error("coordinate is required") unless @$args;
-
-    my $footprintless = $self->app()->footprintless();
-    eval {
-        $self->{overlay} = $self->app()->footprintless()->overlay($coordinate);
-    };
-    $self->usage_error("invalid coordinate [$coordinate]: $@") if ($@);
-
-    $self->{action} = $action || 'update';
-    $self->usage_error("invalid action [$action], must be one of clean, initialize, update")
-        unless ($self->{action} =~ /^clean|initialize|update$/);
+sub _action_implementation {
+    my ($self, $action) = @_;
+    return $actions{$action};
 }
 
 1;
@@ -94,5 +39,9 @@ Performs actions on an overlay.  The available actions are:
                  files
     update       process the template files
 
-If no action is specified, C<update> is implied.  For detailed configuration 
-see L<Footprintless::Overlay>. 
+=head1 SEE ALSO
+
+Footprintless::Overlay
+Footprintless::App::Command::overlay::clean
+Footprintless::App::Command::overlay::initialize
+Footprintless::App::Command::overlay::update

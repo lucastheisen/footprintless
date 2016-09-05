@@ -15,6 +15,7 @@ use File::Basename;
 use File::Path qw(make_path);
 use File::Spec;
 use File::Temp;
+use Template::Resolver;
 use Test::More tests => 21;
 
 BEGIN {use_ok('Footprintless::App')}
@@ -137,13 +138,13 @@ sub test_overlay {
 }
 
 my $coordinate = 'dev.foo.overlay';
-test_overlay($coordinate, undef,
+test_overlay($coordinate, 'update',
     validator => sub {
         my ($footprintless) = @_;
-        match('bin/catalina.sh', $footprintless, $coordinate, 'undef');
-        match('bin/setenv.sh', $footprintless, $coordinate, 'undef');
-        match('conf/jndi-resources.xml', $footprintless, $coordinate, 'undef');
-        match('conf/server.xml', $footprintless, $coordinate, 'undef');
+        match('bin/catalina.sh', $footprintless, $coordinate, 'update');
+        match('bin/setenv.sh', $footprintless, $coordinate, 'update');
+        match('conf/jndi-resources.xml', $footprintless, $coordinate, 'update');
+        match('conf/server.xml', $footprintless, $coordinate, 'update');
     });
 
 test_overlay($coordinate, 'initialize',

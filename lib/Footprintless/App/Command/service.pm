@@ -12,13 +12,6 @@ my $logger = Log::Any->get_logger();
 # ABSTRACT: Performs an action on a service.
 # PODNAME: Footprintless::App::Command::service
 
-sub _configure_logging {
-    my ($self, $level) = @_;
-    require Log::Any::Adapter;
-    Log::Any::Adapter->set('Stderr', 
-        log_level => Log::Any::Adapter::Util::numeric_level($level));
-}
-
 sub execute {
     my ($self, $opts, $args) = @_;
     my ($coordinate, $action) = @$args;
@@ -37,12 +30,6 @@ sub execute {
         }
         exit_due_to($@, 1);
     }
-}
-
-sub opt_spec {
-    return (
-        ["log=s", "will set the log level",],
-    );
 }
 
 sub usage_desc { 
