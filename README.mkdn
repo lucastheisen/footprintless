@@ -330,7 +330,7 @@ for `$coordinate`.
 
 # AUTHOR
 
-Lucas Theisen <lucastheisen@pastdev.com>
+Lucas Theisen &lt;lucastheisen@pastdev.com>
 
 # COPYRIGHT AND LICENSE
 

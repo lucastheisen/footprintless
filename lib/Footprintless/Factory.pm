@@ -93,7 +93,9 @@ sub _init {
             foreach my $plugin_module (@$plugin_modules) {
                 $logger->debugf('registering plugin %s', $plugin_module);
                 $self->register_plugin(
-                    Footprintless::Util::dynamic_module_new($plugin_module));
+                    Footprintless::Util::dynamic_module_new(
+                        $plugin_module,
+                        $self->{entities}{'footprintless'}{$plugin_module}));
             }
         }
     }

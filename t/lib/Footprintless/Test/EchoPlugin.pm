@@ -21,6 +21,9 @@ sub factory_methods {
     return {
         echo => sub {
             return $self->echo(@_);
+        },
+        echo_config => sub {
+            return $self->{config};
         }
     }
 }

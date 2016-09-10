@@ -7,7 +7,8 @@ package Footprintless::Plugin;
 # PODNAME: Footprintless::Plugin
 
 sub new {
-    return bless({}, shift)->_init(@_);
+    my ($class, $config, @rest) = @_;
+    return bless({config => $config}, $class)->_init(@rest);
 }
 
 sub command_packages {
@@ -16,8 +17,7 @@ sub command_packages {
 }
 
 sub _init {
-    my ($self) = @_;
-    return $self;
+    return $_[0];
 }
 
 sub factory_methods {
@@ -72,13 +72,24 @@ C<footprintless.plugins> entity:
         plugins => [
             'Foo::Plugin',
             'Bar::Plugin'
-        ]
+        ],
+        'Foo::Plugin' => {
+            # optional config
+        }
+        'Bar::Plugin' => {
+            # optional config
+        }
     };
 
 Then you can use the methods directly on the footprintless instance:
 
     my $footprintless = Footprintless->new();
     my $foo = $footprintless->foo();
+
+If a key with the same name as the plugin is present in the C<footprintless>
+entity, then the entire hashref will be set as C<$self->{config}> on the
+plugin instance during construction.  You can then override the C<_init()>
+method to do configuration based initialization.
 
 If you want to add commands, just add a module under the package returned
 by L<command_packages|/command_packages()> (defaults to 
