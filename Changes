@@ -1,5 +1,9 @@
 Revision history for Perl module Footprintless
 
+1.15 2016-09-16
+
+    - updated Action to use pod description if present, abstract otherwise
+
 1.14 2016-09-16
 
     - fixed --help to display command help when no action is specified and a default action is present

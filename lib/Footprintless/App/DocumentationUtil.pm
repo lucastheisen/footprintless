@@ -15,6 +15,8 @@ my $logger = Log::Any->get_logger();
 our @EXPORT_OK = qw(
     abstract
     description
+    examples
+    pod_section
 );
 
 sub abstract {
@@ -97,3 +99,14 @@ C<$self_or_class>.
 
 Returns the content of the C<DESCRIPTION> section of the pod for 
 C<$self_or_class>.
+
+=export_ok examples($self_or_class)
+
+Returns the content of the C<EXAMPLES> section of the pod for 
+C<$self_or_class>.
+
+=export_ok pod_section($self_or_class, $section, $indent, $remove)
+
+Returns the content of the C<$section> section of the pod for 
+C<$self_or_class> with indent level C<$indent>.  If specified, 
+C<$remove> a regex used to find content to remove.
