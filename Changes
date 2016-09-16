@@ -1,5 +1,9 @@
 Revision history for Perl module Footprintless
 
+1.14 2016-09-16
+
+    - fixed --help to display command help when no action is specified and a default action is present
+
 1.13 2016-09-16
  
     - sorted out --help content building
