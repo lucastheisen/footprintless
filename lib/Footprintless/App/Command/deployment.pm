@@ -8,14 +8,17 @@ package Footprintless::App::Command::deployment;
 
 use parent qw(Footprintless::App::ActionCommand);
 
-my %actions = (
-    'clean' => 'Footprintless::App::Command::deployment::clean',
-    'deploy' => 'Footprintless::App::Command::deployment::deploy'
-);
+sub _actions {
+    return (
+        'clean' => 'Footprintless::App::Command::deployment::clean',
+        'deploy' => 'Footprintless::App::Command::deployment::deploy'
+    );
+}
 
-sub _action_implementation {
-    my ($self, $action) = @_;
-    return $actions{$action};
+sub _default_action() {return 'deploy'}
+
+sub usage_desc { 
+    return "fpl deployment DEPLOYMENT_COORD ACTION %o";
 }
 
 1;
@@ -24,16 +27,13 @@ __END__
 
 =head1 SYNOPSIS
 
-    fpl deployment project.environment.component.deployment clean
-    fpl deployment project.environment.component.deployment deploy
-    fpl deployment project.environment.component.deployment deploy --clean
+    fpl deployment DEPLOYMENT_COORD clean
+    fpl deployment DEPLOYMENT_COORD deploy
+    fpl deployment DEPLOYMENT_COORD deploy --clean
 
 =head1 DESCRIPTION
 
-Performs actions on a deployment. The available actions are:
-
-    clean   removes all files/folders handled by this deployment
-    deploy  deploys all the resources handled by this deployment
+Performs actions on a deployment.
 
 =head1 SEE ALSO
 

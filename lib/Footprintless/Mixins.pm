@@ -87,7 +87,7 @@ sub _download {
 sub _entity {
     my ($self, $coordinate, $required) = @_;
     my $entity = $self->{factory}->entities()->get_entity($coordinate);
-    invalid_entity($coordinate, "$coordinate required") 
+    invalid_entity($coordinate, "does not exist") 
         if ($required && !$entity);
     return $entity
 }

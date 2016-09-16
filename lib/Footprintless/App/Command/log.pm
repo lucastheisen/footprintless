@@ -8,17 +8,20 @@ package Footprintless::App::Command::log;
 
 use parent qw(Footprintless::App::ActionCommand);
 
-my %actions = (
-    'cat' => 'Footprintless::App::Command::log::cat',
-    'follow' => 'Footprintless::App::Command::log::follow',
-    'grep' => 'Footprintless::App::Command::log::grep',
-    'head' => 'Footprintless::App::Command::log::head',
-    'tail' => 'Footprintless::App::Command::log::tail',
-);
+sub _actions {
+    return (
+        'cat' => 'Footprintless::App::Command::log::cat',
+        'follow' => 'Footprintless::App::Command::log::follow',
+        'grep' => 'Footprintless::App::Command::log::grep',
+        'head' => 'Footprintless::App::Command::log::head',
+        'tail' => 'Footprintless::App::Command::log::tail',
+    );
+}
 
-sub _action_implementation {
-    my ($self, $action) = @_;
-    return $actions{$action};
+sub _default_action() {return 'follow'}
+
+sub usage_desc { 
+    return "fpl log LOG_COORD ACTION %o";
 }
 
 1;
@@ -32,14 +35,7 @@ __END__
 
 =head1 DESCRIPTION
 
-Provides various forms of read access to log files.  The available actions 
-are:
-
-    cat      read the entire file
-    follow   essentially tail -f
-    grep     search for specific content in the file
-    head     read from the beginning of the file
-    tail     read from the end of the file
+Provides various forms of read access to log files.
 
 =head1 SEE ALSO
 

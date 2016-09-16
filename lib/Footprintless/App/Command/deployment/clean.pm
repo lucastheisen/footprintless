@@ -3,6 +3,9 @@ use warnings;
 
 package Footprintless::App::Command::deployment::clean;
 
+# ABSTRACT: removes all files managed by the deployment
+# PODNAME: Footprintless::App::Command::deployment::clean
+
 use parent qw(Footprintless::App::Action);
 
 use Footprintless::App -ignore;
@@ -11,7 +14,7 @@ use Log::Any;
 my $logger = Log::Any->get_logger();
 
 sub execute {
-    my ($self, $footprintless, $coordinate, $opts, $args) = @_;
+    my ($self, $opts, $args) = @_;
 
     $logger->info('Performing clean...');
     $self->{deployment}->clean();
@@ -20,17 +23,18 @@ sub execute {
 }
 
 sub usage_desc { 
-    return "fpl deployment [COORDINATE] clean [OPTIONS]";
+    return "fpl deployment DEPLOYMENT_COORD clean %o";
 }
 
 sub validate_args {
-    my ($self, $footprintless, $coordinate, $opts, $args) = @_;
+    my ($self, $opts, $args) = @_;
 
     eval {
-        $self->{deployment} = $footprintless->deployment($coordinate);
+        $self->{deployment} = $self->{footprintless}
+            ->deployment($self->{coordinate});
     };
 
-    $self->usage_error("invalid coordinate [$coordinate]: $@") if ($@);
+    $self->usage_error("invalid coordinate [$self->{coordinate}]: $@") if ($@);
 }
 
 1;

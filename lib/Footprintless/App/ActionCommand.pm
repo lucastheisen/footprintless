@@ -6,68 +6,115 @@ package Footprintless::App::ActionCommand;
 use Carp;
 use Footprintless::App -command;
 use Getopt::Long::Descriptive;
+use Log::Any;
 
-sub _action {
-    my ($self, $action_name) = @_;
-    my $action = $self->_action_implementation($action_name)
-        || croak("invalid action [$action_name]");
+my $logger = Log::Any->get_logger();
 
-    unless (ref($action)) {
-        {eval "require $action"}; ## no critic
-        $action = $action->new();
+sub _coord_desc {
+    return 'COORD';
+}
+
+sub _default_action {
+    return;
+}
+
+sub description {
+    my ($self) = @_;
+
+    if ($self->{action}) {
+        return $self->{action}->description();
     }
-
-    return $action;
-}
-
-sub _action_args {
-    my ($self, $action, @action_args) = @_;
-
-    local @ARGV = @action_args;
-    my ($options, $usage) = describe_options($action->usage_desc(),
-        $action->opt_spec());
-    return ($usage, $options, \@ARGV);
-}
-
-sub _action_implementation {
-    croak(ref($_[0]) . ' must implement _action_implementation');
+    else {
+        require Footprintless::App::DocumentationUtil;
+        my $pod_description = Footprintless::App::DocumentationUtil::description(
+            $self);
+        my %actions = $self->_actions();
+        return $pod_description .
+            "\nAvailable actions:\n\n" .
+            $self->_format_actions($self->_actions());
+        return $pod_description .
+            "\n";
+    }
 }
 
 sub execute {
     my ($self, $opts, $args) = @_;
 
     $self->{action}->execute(
-        $self->{footprintless},
-        $self->{coordinate},
         $self->{action_opts},
         $self->{action_args});
 }
 
-sub opt_spec {
+sub _format_actions {
+    my ($self, %actions) = @_;
+
+    my %abstracts = ();
+    my $max_length = 0;
+    foreach my $key (keys(%actions)) {
+        my $length = length($key);
+        $abstracts{$key} = Footprintless::App::DocumentationUtil::abstract(
+            $actions{$key});
+        $max_length = $length if ($length > $max_length);
+    }
+
+    return join("\n", 
+        map {
+            sprintf("  %${max_length}s: %s", $_, $abstracts{$_});
+        } sort keys(%actions));
+}
+
+sub prepare {
+    my ($class, $app, @args) = @_;
+    
+    my ($opts, $remaining_args, %fields) = $class->_process_args(
+        \@args, $class->usage_desc(), $class->opt_spec());
+
+    my ($coordinate, $action_name, my @action_args) = @$remaining_args;
+    $fields{coordinate} = $coordinate;
+    $fields{action_name} = $action_name ||$class->_default_action();
+    if ($fields{action_name}) {
+        my %actions = $class->_actions();
+        my $action = $actions{$fields{action_name}};
+        if ($action) {
+            {eval "require $action"}; ## no critic
+            ($fields{action}, $fields{action_opts}, $fields{action_args}) =
+                $action->prepare(
+                    $app, 
+                    $app->footprintless(), 
+                    $coordinate, 
+                    @action_args);
+        }
+    }
+
     return (
-        ["log=s", "will set the log level",],
-    );
+        $class->new({
+            app => $app,
+            %fields}), 
+        $opts, 
+        $remaining_args);
+}
+
+sub usage {
+    my ($self) = @_;
+    return $self->{action} ? $self->{action}->usage() : $self->{usage};
 }
 
 sub validate_args {
     my ($self, $opts, $args) = @_;
 
-    $self->{footprintless} = $self->app()->footprintless();
+    $self->usage_error("coordinate required") unless ($self->{coordinate});
+    $self->usage_error("action required") unless ($self->{action_name});
+    $self->usage_error("invalid action [$self->{action_name}]") 
+        unless ($self->{action});
 
-    my ($coordinate, $action_name, @action_args) = @$args;
-    croak("coordinate required") unless ($coordinate);
-    croak("action required") unless ($action_name);
-
-    $self->{coordinate} = $coordinate;
-    $self->{action} = $self->_action($action_name);
-    ($self->{action_usage}, $self->{action_opts}, $self->{action_args}) =
-    $self->_action_args($self->{action}, @action_args);
-
-    $self->{action}->validate_args(
-        $self->{footprintless},
-        $self->{coordinate},
-        $self->{action_opts},
-        $self->{action_args});
+    eval {
+        $self->{action}->validate_args(
+            $self->{action_opts},
+            $self->{action_args});
+    };
+    if ($@) {
+        $self->usage_error($@);
+    }
 }
 
 1;

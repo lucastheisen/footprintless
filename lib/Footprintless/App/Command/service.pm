@@ -16,10 +16,6 @@ sub execute {
     my ($self, $opts, $args) = @_;
     my ($coordinate, $action) = @$args;
 
-    if ($opts->{log}) {
-        $self->_configure_logging($opts->{log});
-    }
-
     $logger->debugf('executing %s for %s', $action, $coordinate);
     eval {
         $self->{service}->execute($action);
@@ -33,7 +29,7 @@ sub execute {
 }
 
 sub usage_desc { 
-    return "fpl service [COORDINATE] [ACTION] %o" 
+    return "fpl service SERVICE_COORD ACTION" 
 }
 
 sub validate_args {
@@ -70,11 +66,14 @@ __END__
 
 =head1 DESCRIPTION
 
-Performs actions on a service.  The default actions are:
+Performs actions on a service.  
 
-    kill - kills the service abruptly
-    start - starts the service
-    status - checks the status of the service (running/stopped)
-    stop - stops the service
+Base actions:
 
-For detail action configuration see L<Footprintless::Service>. 
+    kill: kills the service abruptly
+   start: starts the service
+  status: checks the status of the service (running/stopped)
+    stop: stops the service
+
+Additional actions can be defined by your entity based on the service 
+commands actual capabilities.

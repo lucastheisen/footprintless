@@ -92,7 +92,7 @@ sub opt_spec {
 }
 
 sub usage_desc { 
-    return "fpl %o [COORDINATE]" 
+    return "fpl config [COORDINATE] %o"
 }
 
 sub validate_args {

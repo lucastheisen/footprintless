@@ -8,15 +8,17 @@ package Footprintless::App::Command::overlay;
 
 use parent qw(Footprintless::App::ActionCommand);
 
-my %actions = (
-    'clean' => 'Footprintless::App::Command::overlay::clean',
-    'initialize' => 'Footprintless::App::Command::overlay::initialize',
-    'update' => 'Footprintless::App::Command::overlay::update'
-);
+sub _actions() {
+    return (
+        'clean' => 'Footprintless::App::Command::overlay::clean',
+        'initialize' => 'Footprintless::App::Command::overlay::initialize',
+        'update' => 'Footprintless::App::Command::overlay::update');
+}
 
-sub _action_implementation {
-    my ($self, $action) = @_;
-    return $actions{$action};
+sub _default_action() {return 'update'}
+
+sub usage_desc { 
+    return "fpl overlay OVERLAY_COORD ACTION %o" 
 }
 
 1;
@@ -25,19 +27,14 @@ __END__
 
 =head1 SYNOPSIS
 
-  fpl overlay project.environment.component.overlay clean
-  fpl overlay project.environment.component.overlay initialize
-  fpl overlay project.environment.component.overlay update
-  fpl overlay project.environment.component.overlay # same as update
+  fpl overlay OVERLAY_COORD clean
+  fpl overlay OVERLAY_COORD initialize
+  fpl overlay OVERLAY_COORD update
+  fpl overlay OVERLAY_COORD # same as update
 
 =head1 DESCRIPTION
 
-Performs actions on an overlay.  The available actions are:
-
-    clean        removes all files/folders handled by this overlay
-    initialize   clean, then combine the base files and the processed template
-                 files
-    update       process the template files
+Performs actions on an overlay. 
 
 =head1 SEE ALSO
 

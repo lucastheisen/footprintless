@@ -3,6 +3,9 @@ use warnings;
 
 package Footprintless::App::Command::log::grep;
 
+# ABSTRACT: output lines matching a pattern
+# PODNAME: Footprintless::App::Command::log::grep
+
 use parent qw(Footprintless::App::Action);
 
 use Footprintless::App -ignore;
@@ -11,7 +14,7 @@ use Log::Any;
 my $logger = Log::Any->get_logger();
 
 sub execute {
-    my ($self, $footprintless, $coordinate, $opts, $args) = @_;
+    my ($self, $opts, $args) = @_;
 
     $self->{log}->grep(
         runner_options => {out_handle => \*STDOUT},
@@ -26,13 +29,18 @@ sub opt_spec {
     );
 }
 
+sub usage_desc { 
+    return "fpl log LOG_COORD grep %o";
+}
+
 sub validate_args {
-    my ($self, $footprintless, $coordinate, $opts, $args) = @_;
+    my ($self, $opts, $args) = @_;
 
     eval {
-        $self->{log} = $footprintless->log($coordinate);
+        $self->{log} = $self->{footprintless}
+            ->log($self->{coordinate});
     };
-    $self->usage_error("invalid coordinate [$coordinate]: $@") if ($@);
+    $self->usage_error("invalid coordinate [$self->{coordinate}]: $@") if ($@);
 }
 
 1;
