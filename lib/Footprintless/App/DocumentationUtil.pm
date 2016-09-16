@@ -3,6 +3,9 @@ use warnings;
 
 package Footprintless::App::DocumentationUtil;
 
+# ABSTRACT: A utility class for generating help documentation from POD
+# PODNAME: Footprintless::App::DocumentationUtil
+
 use Exporter qw(import);
 use File::Spec;
 use Log::Any;
@@ -72,3 +75,15 @@ sub _pm_file {
 }
 
 1;
+
+__END__
+
+=export_ok abstract($self_or_class)
+
+Returns the content of the C<ABSTRACT> section of the pod for 
+C<$self_or_class>.
+
+=export_ok description($self_or_class)
+
+Returns the content of the C<DESCRIPTION> section of the pod for 
+C<$self_or_class>.

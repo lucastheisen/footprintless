@@ -3,6 +3,9 @@ use warnings;
 
 package Footprintless::App::Action;
 
+# ABSTRACT: A base class for actions
+# PODNAME: Footprintless::App::Action
+
 use parent qw(App::Cmd::ArgProcessor);
 
 use Footprintless::App -ignore;
@@ -67,4 +70,53 @@ sub validate_args {}
 
 __END__
 
-=for Pod::Coverage new execute opt_spec usage_desc validate_args
+=func abstract($self_or_class) 
+
+Returns the abstract for the action.  By default it will pull it from the
+C<ABSTRACT> section of the pod.  This function should be called using
+I<method invokation>.
+
+=func description($self_or_class) 
+
+Returns the description for the action.  By default it will pull it from the
+C<DESCRIPTION> section of the pod.  This function should be called using
+I<method invokation>.
+
+=func opt_spec()
+
+Returns an options specificatino for this action according to 
+L<Getopt::Long::Descriptive>.
+
+=func prepare($class, $app, $footprintless, $coordinate, @args)
+
+Processes C<@args> to parse off the options, then generates a new instance
+of the action implementation and returns the 3-tuple: action, options, 
+remaining args.  See L<App::Cmd::Command::prepare> for inspiration.
+
+=method execute($opts, $args)
+
+Executes the action.
+
+=method usage()
+
+Returns the usage object from L<Getopt::Long::Descriptive> for the action.
+
+=method usage_error($message, $coordinate)
+
+Die's with a generated message based on C<$message> and C<$coordinate>.
+
+=method usage_desc() 
+
+Returns the top level usage line.  See L<App::Cmd::Command::usage_desc> for
+inspiration.
+
+=method validate_args($opts, $args)
+
+Performs additional validation on C<$opts> and C<$args>.  Calls 
+L<usage_error($message, $coordinate)> if there is a problem.
+
+=for Pod::Coverage _new 
+
+=head1 SEE ALSO
+
+Footprintless::App::DocumentationUtil

@@ -3,6 +3,9 @@ use warnings;
 
 package Footprintless::MixableBase;
 
+# ABSTRACT: A base class for using mixins
+# PODNAME: Footprintless::MixableBase
+
 use Log::Any;
 
 my $logger = Log::Any->get_logger();

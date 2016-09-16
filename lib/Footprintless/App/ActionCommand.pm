@@ -3,6 +3,9 @@ use warnings;
 
 package Footprintless::App::ActionCommand;
 
+# ABSTRACT: A base class for action commands
+# PODNAME: Footprintless::App::ActionCommand
+
 use Carp;
 use Footprintless::App -command;
 use Getopt::Long::Descriptive;
