@@ -1,5 +1,9 @@
 Revision history for Perl module Footprintless
+
+1.13 2016-09-16
  
+    - sorted out --help content building
+
 1.12 2016-09-10
 
     - added configuration capability to Plugin
