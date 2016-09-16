@@ -15,6 +15,8 @@ my $logger = Log::Any->get_logger();
 our @EXPORT_OK = qw(
     abstract
     description
+    examples
+    pod_section
 );
 
 sub abstract {
@@ -29,13 +31,21 @@ sub abstract {
 }
 
 sub description {
-    my ($self_or_class) = @_;
+    return pod_section($_[0], 'DESCRIPTION', 0, qr/Description:\n/);
+}
+
+sub examples {
+    return pod_section($_[0], 'EXAMPLES');
+}
+
+sub pod_section {
+    my ($self_or_class, $section, $indent, $remove) = @_;
 
     my $pm_file = _pm_file($self_or_class) ||
         return $self_or_class->abstract();
 
-    my $description = '';
-    open(my $output, '>', \$description);
+    my $pod = '';
+    open(my $output, '>', \$pod);
 
     require Pod::Usage;
     Pod::Usage::pod2usage( 
@@ -43,13 +53,15 @@ sub description {
         -output => $output,
         -exit => "NOEXIT", 
         -verbose => 99,
-        -sections => "DESCRIPTION",
-        indent => 0);
+        -sections => $section,
+        indent => $indent);
 
-    $description =~ s/Description:\n//m;
-    chomp($description);
+    if ($pod) {
+        $pod =~ s/$remove//m if ($remove);
+        chomp($pod);
+    }
 
-    return $description;
+    return $pod;
 }
 
 sub _pm_file {
@@ -87,3 +99,14 @@ C<$self_or_class>.
 
 Returns the content of the C<DESCRIPTION> section of the pod for 
 C<$self_or_class>.
+
+=export_ok examples($self_or_class)
+
+Returns the content of the C<EXAMPLES> section of the pod for 
+C<$self_or_class>.
+
+=export_ok pod_section($self_or_class, $section, $indent, $remove)
+
+Returns the content of the C<$section> section of the pod for 
+C<$self_or_class> with indent level C<$indent>.  If specified, 
+C<$remove> a regex used to find content to remove.

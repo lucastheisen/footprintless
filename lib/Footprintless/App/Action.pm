@@ -27,10 +27,16 @@ sub abstract {
 
 sub description {
     my ($self_or_class) = @_;
-    my $description = ucfirst($self_or_class->abstract());
+
+    require Footprintless::App::DocumentationUtil;
+    my $description = 
+        Footprintless::App::DocumentationUtil::description($self_or_class) ||
+        ucfirst($self_or_class->abstract());
+
     if (scalar($self_or_class->opt_spec())) {
         $description .= "\n\nAvailable options:\n";
     }
+
     return $description;
 }
 
