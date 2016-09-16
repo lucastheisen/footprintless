@@ -24,7 +24,7 @@ sub _default_action {
 sub description {
     my ($self) = @_;
 
-    if ($self->{action}) {
+    if ($self->{action} && !$self->{is_default_action}) {
         return $self->{action}->description();
     }
     else {
@@ -32,11 +32,16 @@ sub description {
         my $pod_description = Footprintless::App::DocumentationUtil::description(
             $self);
         my %actions = $self->_actions();
+
+        my $default_action = $self->_default_action();
+        $default_action = $default_action
+            ? "\n\nDefault action: $default_action"
+            : '';
+
         return $pod_description .
             "\nAvailable actions:\n\n" .
-            $self->_format_actions($self->_actions());
-        return $pod_description .
-            "\n";
+            $self->_format_actions($self->_actions()) .
+            $default_action;
     }
 }
 
@@ -74,7 +79,15 @@ sub prepare {
 
     my ($coordinate, $action_name, my @action_args) = @$remaining_args;
     $fields{coordinate} = $coordinate;
-    $fields{action_name} = $action_name ||$class->_default_action();
+
+    if ($action_name) {
+        $fields{action_name} = $action_name;
+    }
+    else {
+        $fields{action_name} = $class->_default_action();
+        $fields{is_default_action} = 1;
+    }
+
     if ($fields{action_name}) {
         my %actions = $class->_actions();
         my $action = $actions{$fields{action_name}};
@@ -99,7 +112,9 @@ sub prepare {
 
 sub usage {
     my ($self) = @_;
-    return $self->{action} ? $self->{action}->usage() : $self->{usage};
+    return ($self->{action} && !$self->{is_default_action}) 
+        ? $self->{action}->usage() 
+        : $self->{usage};
 }
 
 sub validate_args {
