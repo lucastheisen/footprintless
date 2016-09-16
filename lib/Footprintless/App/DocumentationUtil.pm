@@ -29,13 +29,21 @@ sub abstract {
 }
 
 sub description {
-    my ($self_or_class) = @_;
+    return pod_section($_[0], 'DESCRIPTION', 0, qr/Description:\n/);
+}
+
+sub examples {
+    return pod_section($_[0], 'EXAMPLES');
+}
+
+sub pod_section {
+    my ($self_or_class, $section, $indent, $remove) = @_;
 
     my $pm_file = _pm_file($self_or_class) ||
         return $self_or_class->abstract();
 
-    my $description = '';
-    open(my $output, '>', \$description);
+    my $pod = '';
+    open(my $output, '>', \$pod);
 
     require Pod::Usage;
     Pod::Usage::pod2usage( 
@@ -43,13 +51,15 @@ sub description {
         -output => $output,
         -exit => "NOEXIT", 
         -verbose => 99,
-        -sections => "DESCRIPTION",
-        indent => 0);
+        -sections => $section,
+        indent => $indent);
 
-    $description =~ s/Description:\n//m;
-    chomp($description);
+    if ($pod) {
+        $pod =~ s/$remove//m if ($remove);
+        chomp($pod);
+    }
 
-    return $description;
+    return $pod;
 }
 
 sub _pm_file {
