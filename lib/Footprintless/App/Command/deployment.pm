@@ -15,7 +15,9 @@ sub _actions {
     );
 }
 
-sub _default_action() {return 'deploy'}
+sub _default_action {
+    return 'deploy'
+}
 
 sub usage_desc { 
     return "fpl deployment DEPLOYMENT_COORD ACTION %o";

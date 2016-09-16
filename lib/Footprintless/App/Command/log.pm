@@ -14,11 +14,13 @@ sub _actions {
         'follow' => 'Footprintless::App::Command::log::follow',
         'grep' => 'Footprintless::App::Command::log::grep',
         'head' => 'Footprintless::App::Command::log::head',
-        'tail' => 'Footprintless::App::Command::log::tail',
+        'tail' => 'Footprintless::App::Command::log::tail'
     );
 }
 
-sub _default_action() {return 'follow'}
+sub _default_action {
+    return 'follow'
+}
 
 sub usage_desc { 
     return "fpl log LOG_COORD ACTION %o";

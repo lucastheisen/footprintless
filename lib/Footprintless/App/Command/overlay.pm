@@ -8,14 +8,17 @@ package Footprintless::App::Command::overlay;
 
 use parent qw(Footprintless::App::ActionCommand);
 
-sub _actions() {
+sub _actions {
     return (
         'clean' => 'Footprintless::App::Command::overlay::clean',
         'initialize' => 'Footprintless::App::Command::overlay::initialize',
-        'update' => 'Footprintless::App::Command::overlay::update');
+        'update' => 'Footprintless::App::Command::overlay::update'
+    );
 }
 
-sub _default_action() {return 'update'}
+sub _default_action {
+    return 'update'
+}
 
 sub usage_desc { 
     return "fpl overlay OVERLAY_COORD ACTION %o" 
