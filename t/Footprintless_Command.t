@@ -14,7 +14,7 @@ use Footprintless::Command qw(
     tail_command
     write_command
 );
-use Test::More tests => 45;
+use Test::More tests => 48;
 
 BEGIN {use_ok('Footprintless::Command')}
 
@@ -88,6 +88,8 @@ is( command( 'echo', command_options( username => 'bar', hostname => 'foo', ssh 
 is( command( "find . -exec cat {} \\;" ),
     'find . -exec cat {} \;',
     'wrap doesn\'t remove ;' );
+is( command('echo', command_options( sudo_command => '/opt/sudo' )), 'echo', 'sudo command no sudo user' );
+is( command('echo', command_options( sudo_command => '/opt/sudo', sudo_username => 'foo' )), '/opt/sudo -u foo echo', 'sudo command and sudo user' );
 
 is( cp_command( "abc", "def", file => 1 ),
     'cat abc|dd of=def',
@@ -132,6 +134,10 @@ is( cp_command( "abc", command_options(hostname=>'foo',sudo_username=>'foo_user'
     "def", command_options(hostname=>'bar',sudo_username=>'bar_user'), archive => 'zip' ),
     'ssh foo "sudo -u foo_user bash -c \"cd abc;zip -qr - .\""|ssh bar "sudo -u bar_user dd of=def/temp_cp_command.zip;sudo -u bar_user unzip -qod def def/temp_cp_command.zip;sudo -u bar_user rm -f \"def/temp_cp_command.zip\""',
     'directory unzip cp_command with command options' );
+is( cp_command( "abc", command_options(hostname=>'foo',sudo_command=>'/opt/sudo',sudo_username=>'foo_user'), 
+    "def", command_options(hostname=>'bar',sudo_command=>'/usr/depot/bin/sudo',sudo_username=>'bar_user'), archive => 'zip' ),
+    'ssh foo "/opt/sudo -u foo_user bash -c \"cd abc;zip -qr - .\""|ssh bar "/usr/depot/bin/sudo -u bar_user dd of=def/temp_cp_command.zip;/usr/depot/bin/sudo -u bar_user unzip -qod def def/temp_cp_command.zip;/usr/depot/bin/sudo -u bar_user rm -f \"def/temp_cp_command.zip\""',
+    'directory unzip cp_command with sudo command and command options' );
 
 is( mkdir_command( 'foo', 'bar', command_options( hostname => 'baz' ) ),
     'ssh baz "mkdir -p \\"foo\\" \\"bar\\""',
@@ -149,7 +155,7 @@ is(rm_command('/foo', '/bar', 'baz'), 'rm -f "/bar" "/foo" "baz"', 'rm files');
 is(rm_command('/foo/', '/bar/', 'baz/'), 'rm -rf "/bar/" "/foo/" "baz/"', 'rm dirs');
 is(rm_command('/foo', '/bar/', 'baz', 'foz/'), 'bash -c "rm -rf \\"/bar/\\" \\"foz/\\";rm -f \\"/foo\\" \\"baz\\""', 'rm files and dirs');
 
-is( sed_command('s/foo/bar/'), 'sed -e \'s/foo/bar/\'', 'simple sed' );
+is(sed_command('s/foo/bar/'), 'sed -e \'s/foo/bar/\'', 'simple sed' );
 
 is(tail_command('access_log', lines => 10), 'tail -n 10 access_log', 'tail 10 lines access_log');
 is(tail_command('access_log', follow => 1), 'tail -f access_log', 'tail access_log');

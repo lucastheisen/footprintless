@@ -19,6 +19,7 @@ sub command_options {
 
     $options{ssh} = $self->{default_ssh} unless ($options{ssh});
     delete($options{sudo_username}) unless ($options{sudo_username});
+    delete($options{sudo_command}) unless ($options{sudo_command});
     delete($options{username}) unless ($options{username});
     if ($self->{localhost} && $options{hostname} &&
         $self->{localhost}->is_alias($options{hostname})) {
@@ -56,6 +57,7 @@ scalar values.  Their defaults are:
 
     hostname => undef,
     ssh => 'ssh -q',
+    sudo_command => undef,
     sudo_username => undef,
     username => undef
 

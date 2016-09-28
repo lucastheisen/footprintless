@@ -121,6 +121,7 @@ sub _init {
                     hostname => undef,
                     ssh => undef,
                     ssh_username => undef,
+                    sudo_command => undef,
                     sudo_username => undef
                 },
                 ancestry => 1)

@@ -102,8 +102,11 @@ sub cp_command {
             if ($cp_options{status}) {
                 push(@parts, join('', 
                     'pv -f -s `',
-                    _sudo_command($source_command_options 
-                        && $source_command_options->get_sudo_username(),
+                    _sudo_command(
+                        $source_command_options
+                            ? ($source_command_options->get_sudo_command(),
+                                $source_command_options->get_sudo_username())
+                            : (undef, undef),
                         pipe_command("du -sb $source_path", 'cut -f1')),
                     '`'));
             }
@@ -112,8 +115,11 @@ sub cp_command {
                 push(@destination_parts, 'gunzip');
             } 
             push(@destination_parts, 
-                _sudo_command($destination_command_options 
-                    && $destination_command_options->get_sudo_username(),
+                _sudo_command(
+                    $destination_command_options 
+                        ? ($destination_command_options->get_sudo_command(),
+                            $destination_command_options->get_sudo_username())
+                        : (undef, undef),
                     "tar --no-overwrite-dir -x -C $destination_path"));
 
             $source_command = command(pipe_command(@parts), 
@@ -239,9 +245,9 @@ sub sed_command {
 }
 
 sub _sudo_command {
-    my ($sudo_username, $command) = @_;
+    my ($sudo_command, $sudo_username, $command) = @_;
     if (defined($sudo_username)) {
-        $command = "sudo " .
+        $command = ($sudo_command ? "$sudo_command " : 'sudo ') .
             ($sudo_username ? "-u $sudo_username " : '') . 
             $command;
     }
@@ -300,13 +306,14 @@ sub wrap {
     my $wrap_options = shift;
     my $builder = pop;
     my @args = @_;
-    my ($ssh, $username, $hostname, $sudo_username, $pretty);
+    my ($ssh, $username, $hostname, $sudo_command, $sudo_username, $pretty);
 
     if (ref($args[$#args]) eq 'Footprintless::Command::CommandOptions') {
         my $options = pop( @args );
         $ssh = $options->get_ssh() || 'ssh';
         $username = $options->get_username();
         $hostname = $options->get_hostname();
+        $sudo_command = $options->get_sudo_command();
         $sudo_username = $options->get_sudo_username();
         $pretty = $options->get_pretty();
     }
@@ -325,7 +332,7 @@ sub wrap {
 
             $command =~ s/^(.*?[^\\]);$/$1/; # from find -exec
      
-            $command = _sudo_command($sudo_username, $command);
+            $command = _sudo_command($sudo_command, $sudo_username, $command);
 
             $destination_command .= $command;
         }
@@ -367,6 +374,9 @@ sub clone {
     if (exists($instance->{username}) && !exists($options{username})) {
         $options{username} = $instance->{username};
     }
+    if (exists($instance->{sudo_command}) && !exists($options{sudo_command})) {
+        $options{sudo_command} = $instance->{sudo_command};
+    }
     if (exists($instance->{sudo_username}) && !exists($options{sudo_username})) {
         $options{sudo_username} = $instance->{sudo_username};
     }
@@ -389,6 +399,10 @@ sub get_ssh {
     return $_[0]->{ssh};
 }
 
+sub get_sudo_command {
+    return $_[0]->{sudo_command};
+}
+
 sub get_sudo_username {
     return $_[0]->{sudo_username};
 }
@@ -403,6 +417,7 @@ sub _init {
     $self->{hostname} = $options{hostname} if (defined($options{hostname}));
     $self->{ssh} = $options{ssh} if (defined($options{ssh}));
     $self->{username} = $options{username} if (defined($options{username}));
+    $self->{sudo_command} = $options{sudo_command} if (defined($options{sudo_command}));
     $self->{sudo_username} = $options{sudo_username} if (defined($options{sudo_username}));
     $self->{pretty} = $options{pretty} if (defined($options{pretty}));
 
@@ -507,6 +522,13 @@ options are:
 The ssh command to use, defaults to C<ssh>.  You can use this to specify other
 commands like C<plink> for windows or an implementation of C<ssh> that is not
 in your path.
+
+=item sudo_command
+
+The actual C<sudo> command.  Most likely you will want to leave this undefined
+and let C<sudo> be found in your C<$PATH>.  However, if for some reason you 
+need to use a different version (ex: C</usr/depot/bin/sudo>, then this provides 
+that option.
 
 =item sudo_username
 
