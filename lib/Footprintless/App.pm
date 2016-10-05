@@ -13,34 +13,14 @@ use Log::Any;
 
 my $logger = Log::Any->get_logger();
 
-my $pretend_self = {};
-
 # todo: remove after https://github.com/rjbs/App-Cmd/pull/60
-sub _new {
-    my ($class, $arg) = @_;
-
-    my $arg0 = $0;
-    require File::Basename;
-    my $base = File::Basename::basename $arg0;
-
-    my $self = bless(
-        {
-            arg0         => $base,
-            full_arg0    => $arg0,
-            show_version => $arg->{show_version_cmd} || 0,
-        },
-        $class);
-
-    $self->{command} = $self->_command($arg);
-
-    return $self;
-}
+my $pretend_self = {};
 
 sub _configure_logging {
     my ($self, %options) = @_;
 
-    my $log_configurator_module = footprintless()->entities()
-        ->get_entity('footprintless.log_configurator');
+    my $log_configurator_module = $self->footprintless()
+        ->entities()->get_entity('footprintless.log_configurator');
     if ($log_configurator_module) {
         dynamic_module_new($log_configurator_module)
             ->configure(%options);
@@ -56,11 +36,11 @@ sub _configure_logging {
 sub footprintless {
     my ($self) = @_;
 
-    if (!defined($self->{footprintless})) {
-        $self->{footprintless} = Footprintless->new();
+    if (!defined($pretend_self->{footprintless})) {
+        $pretend_self->{footprintless} = Footprintless->new();
     }
 
-    return $self->{footprintless};
+    return $pretend_self->{footprintless};
 }
 
 sub get_command {
@@ -86,10 +66,13 @@ sub global_opt_spec {
 
 # todo: remove after https://github.com/rjbs/App-Cmd/pull/60
 sub footprintless_plugin_search_paths {
+    my ($self) = @_;
+
     my @paths = ();
-    foreach my $plugin (footprintless($pretend_self)->plugins()) {
+    foreach my $plugin ($self->footprintless()->plugins()) {
         push(@paths, $plugin->command_packages());
     }
+    
     return @paths;
 }
 
