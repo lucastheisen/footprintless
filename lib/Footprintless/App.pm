@@ -33,6 +33,11 @@ sub _configure_logging {
     }
 }
 
+sub clear_pretend_self {
+    #used by unit tests to clear out predend self hack between tests
+    $pretend_self = {};
+}
+
 sub footprintless {
     my ($self) = @_;
 
@@ -107,7 +112,7 @@ __END__
 
 Returns the instance of C<Footprintless> for this instance of the app.
 
-=for Pod::Coverage get_command global_opt_spec footprintless_plugin_search_paths REAL_footprintless_plugin_search_paths plugin_search_path
+=for Pod::Coverage clear_pretend_self get_command global_opt_spec footprintless_plugin_search_paths REAL_footprintless_plugin_search_paths plugin_search_path
 
 =head1 SEE ALSO
 

@@ -77,6 +77,7 @@ sub test_deployment {
     my $deployment = $footprintless->entities()->get_entity($coordinate);
     $logger->trace('deployment ', dumper($deployment)) if ($logger->is_trace());
 
+    Footprintless::App::clear_pretend_self();
     my $result = test_app('Footprintless::App' => 
         [
             'deployment', 

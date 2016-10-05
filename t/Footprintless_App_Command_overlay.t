@@ -126,6 +126,7 @@ sub test_overlay {
         $logger->tracef('overlay: %s', Data::Dumper->new([$overlay])->Indent(1)->Dump());
     }
 
+    Footprintless::App::clear_pretend_self();
     my $result = test_app('Footprintless::App' => ['overlay', $coordinate, $action,
             ($options{command_args} ? @{$options{command_args}} : ())]);
     is($result->exit_code(), 0, "overlay completed succesfully");
