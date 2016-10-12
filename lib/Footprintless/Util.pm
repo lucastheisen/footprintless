@@ -380,13 +380,15 @@ Writes C<$content> to C<$file>.  The available options are:
 
 =func temp_file()
 
-Creates a new temporary file with C<safe_level> set to 
-C<HIGH>.  Returns the new L<File::Temp> object.
+Creates a new temporary file with mode C<0600>
+Returns the new L<File::Temp> object.  Uses C<File::Temp> so you can set
+C<File::Temp::HIGH> for extra safety.
 
 =func temp_dir()
 
-Creates a new temporary directory with C<safe_level> set to 
-C<HIGH>.  Returns the new L<File::Temp> object.
+Creates a new temporary directory with mode C<2700>.
+Returns the new L<File::Temp> object.  Uses C<File::Temp> so you can set
+C<File::Temp::HIGH> for extra safety.
 
 =over 4
 
