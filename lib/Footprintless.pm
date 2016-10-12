@@ -28,7 +28,7 @@ sub AUTOLOAD {
     my ($self, @args) = @_;
     my $method = $AUTOLOAD;
     $method =~ s/.*:://;
-    $self->{factory}->$method(@args);
+    $self->{factory}->$method(@args) if ($self->{factory});
 }
 
 sub command_options_factory {

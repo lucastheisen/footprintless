@@ -1,5 +1,9 @@
 Revision history for Perl module Footprintless
 
+1.18 2016-10-12
+
+    - resolved https://rt.cpan.org/Ticket/Display.html?id=118019 Can't redeclare "my" in "my"
+
 1.17 2016-10-05
 
     - fixed bug causing footprintless to get initialized 3 times

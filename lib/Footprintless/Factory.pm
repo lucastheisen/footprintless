@@ -72,6 +72,8 @@ sub deployment {
     return Footprintless::Deployment->new($self, $coordinate, %options);
 }
 
+sub DESTROY { }
+
 sub entities {
     return $_[0]->{entities};
 }

@@ -77,7 +77,7 @@ sub prepare {
     my ($opts, $remaining_args, %fields) = $class->_process_args(
         \@args, $class->usage_desc(), $class->opt_spec());
 
-    my ($coordinate, $action_name, my @action_args) = @$remaining_args;
+    my ($coordinate, $action_name, @action_args) = @$remaining_args;
     $fields{coordinate} = $coordinate;
 
     if ($action_name) {
