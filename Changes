@@ -1,5 +1,9 @@
 Revision history for Perl module Footprintless
 
+1.19 2016-10-20
+
+    - added support for clean in .footprintless placeholders for overlay update
+
 1.18 2016-10-12
 
     - resolved https://rt.cpan.org/Ticket/Display.html?id=118019 Can't redeclare "my" in "my"
