@@ -11,6 +11,7 @@ use parent qw(Footprintless::MixableBase);
 use Carp;
 use Footprintless::Mixins qw (
     _clean
+    _command_options
     _entity
     _extract_resource
     _local_template
@@ -148,6 +149,18 @@ sub _resolve_footprintless {
 
     my $spec = do($template) || return;
     croak("invalid $template") unless (ref($spec) eq 'HASH');
+
+    if ($spec->{clean}) {
+        my @to_be_cleaned = map 
+            {
+                File::Spec->catdir($destination, $_) . (/\/$/ ? '/' : '');
+            } 
+            ref($spec->{clean}) ? @{$spec->{clean}} : ($spec->{clean});
+
+        Footprintless::Util::clean(\@to_be_cleaned,
+            command_runner => $self->{factory}->command_runner(),
+            command_options => $self->_command_options());
+    }
 
     if ($spec->{resources}) {
         my $resource_manager = $self->{factory}->resource_manager();
