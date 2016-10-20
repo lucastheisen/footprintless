@@ -216,6 +216,26 @@ Overlays are a combination of a directory of static files and a directory
 of templated files that will be merged to an output directory.  This
 is implemented in L<Template::Overlay>.  
 
+Additionally, any folder under the C<template_dir> can contain a 
+C<.footprintless> file containing a C<clean> and/or C<resources> entities:
+
+    return {
+        clean => [
+            'foo.jar',
+            'bar.jar',
+            'ext/'
+        ],
+        resources => {
+            foo => 'com.pastdev:foo:1.0.0',
+            bar => 'com.pastdev:bar:1.0.0'
+        }
+    };
+
+The C<clean> entity is an arrayref containing a list of paths to clean out.
+These paths will be added to the path of the directory containing the
+C<.footprintless> file.  The C<resources> entity is a list of resources to
+download into the same directory as the C<.footprintless> file.
+
 =head1 ENTITIES
 
 A simple overlay: 
