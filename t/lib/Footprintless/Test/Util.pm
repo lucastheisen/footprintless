@@ -11,6 +11,7 @@ use File::Temp;
 use Footprintless::Util qw(
     dynamic_module_new
 );
+use Log::Any;
 
 our @EXPORT_OK = qw(
     command_runner
@@ -19,6 +20,7 @@ our @EXPORT_OK = qw(
     test_dir
 );
 
+my $logger = Log::Any->get_logger();
 
 my $test_dir = abs_path(
     File::Spec->catfile(dirname(__FILE__), '..', '..', '..'));
@@ -31,9 +33,11 @@ sub command_runner {
 
 sub copy_recursive {
     my ($from, $to) = @_;
+    $logger->infof('copy_recursive [%s]->[%s]', $from, $to);
 
     require File::Copy;
     if (-f $from) {
+        $logger->tracef('copy [%s]->[%s]', $from, $to);
         File::Copy::copy($from, $to);
     }
     elsif (-d $from) {
@@ -51,9 +55,12 @@ sub copy_recursive {
                 my $relative = substr($File::Find::name, $from_base_length);
                 my $destination = File::Spec->catfile($to, $relative);
                 if (-d $File::Find::name) {
+                    $logger->tracef('make path [%s]', $destination);
                     File::Path::make_path($destination)
                 }
                 else {
+                    $logger->tracef('copy [%s]->[%s]',
+                        $File::Find::name, $destination);
                     File::Copy::copy($File::Find::name, $destination)
                         || croak("unable to copy file $relative: $!");
                 }

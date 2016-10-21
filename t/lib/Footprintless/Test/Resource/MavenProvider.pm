@@ -5,6 +5,7 @@ package Footprintless::Test::Resource::MavenProvider;
 
 use parent qw(Footprintless::Resource::MavenProvider);
 
+use File::Path;
 use File::Spec;
 use Footprintless::Test::Util qw(
     copy_recursive
@@ -21,7 +22,9 @@ sub _init {
     require Maven::Agent || croak('Maven::Agent not installed');
 
     my $maven_user_home = File::Spec->catdir(temp_dir(), 'HOME');
-    copy_recursive(test_dir('data', 'maven', 'HOME'), $maven_user_home);
+    my $dot_m2 = File::Spec->catdir($maven_user_home, '.m2');
+    File::Path::make_path($dot_m2);
+    copy_recursive(test_dir('data', 'maven', 'HOME', 'dot_m2'), $dot_m2);
 
     $self->{maven_agent} =  Maven::Agent->new(
         agent => $self->{factory}->agent(),

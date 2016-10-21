@@ -104,7 +104,7 @@ SKIP: {
     
     ok($expected_artifact, 'MavenProvider resolve');
     my $local_repo_artifact_path = test_dir(
-        'data', 'maven', 'HOME', '.m2', 'repository',
+        'data', 'maven', 'HOME', 'dot_m2', 'repository',
         'com', 'pastdev', 'foo', '1.0.1', 'foo-1.0.1.pom');
     my $download_path = $manager->download($coordinate);
     ok(-f $download_path, 'file found in local repo');
