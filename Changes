@@ -1,5 +1,9 @@
 Revision history for Perl module Footprintless
 
+1.20 2016-10-21
+
+    - added support for resource manager provider configuration
+
 1.19 2016-10-20
 
     - added support for clean in .footprintless placeholders for overlay update

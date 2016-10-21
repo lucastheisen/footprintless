@@ -8,32 +8,61 @@ use Cwd qw(abs_path);
 use Exporter qw(import);
 use File::Basename;
 use File::Temp;
-use Footprintless::Command qw(
-    batch_command
-    cp_command
-    mkdir_command
-);
-use Footprintless::CommandRunner::IPCRun;
-use Footprintless::CommandRunner::IPCRun3;
 use Footprintless::Util qw(
-    agent
+    dynamic_module_new
 );
 
 our @EXPORT_OK = qw(
     command_runner
+    copy_recursive
     is_empty_dir
-    maven_agent
+    test_dir
 );
 
 
 my $test_dir = abs_path(
     File::Spec->catfile(dirname(__FILE__), '..', '..', '..'));
-my $default_maven_user_home = File::Spec->catfile(
-    $test_dir, 'data', 'maven', 'HOME');
 
 sub command_runner {
     my ($name) = shift || 'IPCRun';
-    return "Footprintless::CommandRunner::$name"->new();
+    return dynamic_module_new(
+        "Footprintless::CommandRunner::$name");
+}
+
+sub copy_recursive {
+    my ($from, $to) = @_;
+
+    require File::Copy;
+    if (-f $from) {
+        File::Copy::copy($from, $to);
+    }
+    elsif (-d $from) {
+        croak ('cannot copy directory to file') if (-f $to);
+
+        $from =~ s/\/?$/\//;
+        my $from_base_length = length($from);
+
+        require File::Find;
+        require File::Path;
+        require File::Spec;
+        File::Find::find(
+            sub {
+                return if /^\.\.?$/;
+                my $relative = substr($File::Find::name, $from_base_length);
+                my $destination = File::Spec->catfile($to, $relative);
+                if (-d $File::Find::name) {
+                    File::Path::make_path($destination)
+                }
+                else {
+                    File::Copy::copy($File::Find::name, $destination)
+                        || croak("unable to copy file $relative: $!");
+                }
+            },
+            $from);
+    }
+    else {
+        croak("not a file or directory");
+    }
 }
 
 sub is_empty_dir {
@@ -45,25 +74,8 @@ sub is_empty_dir {
         ) == 0;
 }
 
-sub maven_agent {
-    my ($dir) = @_;
-
-    require Maven::Agent || croak('Maven::Agent not installed');
-
-    my $maven_user_home;
-    if ($dir) {
-        $maven_user_home = File::Spec->catdir($dir, 'HOME');
-        command_runner()->run_or_die(batch_command(
-            mkdir_command($maven_user_home),
-            cp_command($default_maven_user_home, $maven_user_home)));
-    }
-    else {
-        $maven_user_home = $default_maven_user_home;
-    }
-
-    return Maven::Agent->new(
-        agent => agent(),
-        'user.home' => $maven_user_home);
+sub test_dir {
+    return File::Spec->catfile($test_dir, @_);
 }
 
 1;

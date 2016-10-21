@@ -192,7 +192,7 @@ sub rebase {
     return $rebased;
 }
 
-sub resource_manager {
+sub REMOVE_ME_resource_manager {
     my ($agent) = @_;
     $agent ||= agent();
 

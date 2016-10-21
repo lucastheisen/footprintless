@@ -141,11 +141,12 @@ sub register_plugin {
 }
 
 sub resource_manager {
-    my ($self) = @_;
+    my ($self, $coordinate, %options) = @_;
     
     unless ($self->{resource_manager}) {
         $self->{resource_manager} = 
-            Footprintless::Util::resource_manager($self->agent())
+            Footprintless::Util::dynamic_module_new(
+                'Footprintless::ResourceManager', $self, $coordinate);
     }
 
     return $self->{resource_manager};

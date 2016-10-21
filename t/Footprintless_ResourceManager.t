@@ -3,14 +3,17 @@ use warnings;
 
 use lib 't/lib';
 
-use File::Basename;
 use File::Spec;
 use File::Temp;
-use Footprintless::Test::Util qw(maven_agent);
 use Footprintless::Resource::UrlProvider;
-use Footprintless::Util qw(slurp);
+use Footprintless::Test::Util qw(
+    test_dir
+);
+use Footprintless::Util qw(
+    slurp
+);
 use LWP::UserAgent;
-use Test::More tests => 10;
+use Test::More tests => 14;
 
 BEGIN {use_ok('Footprintless::ResourceManager')}
 
@@ -29,54 +32,90 @@ eval {
 
 my $logger = Log::Any->get_logger();
 
-my $test_dir = dirname(File::Spec->rel2abs($0));
+sub factory {
+    my ($providers) = @_;
+    return Footprintless::Util::factory({
+        footprintless => {
+            resource_manager => {
+                ($providers ? (providers => $providers) : ())
+            }
+        }
+    });
+}
 
 my $lwp = LWP::UserAgent->new();
 $lwp->env_proxy();
 
-my $path = File::Spec->catfile($test_dir, 'config', 'properties.pl');
+my $path = test_dir('config', 'properties.pl');
 my $url = "file://$path";
 
-my $url_provider = Footprintless::Resource::UrlProvider->new($lwp);
-my $manager = Footprintless::ResourceManager->new($url_provider);
-is($manager->resource($url)->get_url(), $url, 'UrlProvider resolve');
-is(slurp($manager->download($url)), slurp($path), 'UrlProvider download');
+{
+    $logger->info('invalid provider');
+    eval {
+        Footprintless::ResourceManager->new(factory(['Foo']));
+    };
+    ok($@, 'fails to load invalid provider');
+}
 
-my $http_url = "http://www.google.com/foo";
-is($manager->resource($http_url)->get_url(), $http_url, 'UrlProvider resolve http');
+{
+    $logger->info('default provider');
+    my $manager = Footprintless::ResourceManager->new(factory());
+    is($manager->resource($url)->get_url(), $url, 'default resolve');
+    is(slurp($manager->download($url)), slurp($path), 'defaultdownload');
+}
+
+{
+    $logger->info('invalid provider');
+    eval {
+        Footprintless::ResourceManager->new(factory(['Foo']));
+    };
+    ok($@, 'fails to load invalid provider');
+}
+
+{
+    $logger->info('url provider');
+    my $manager = Footprintless::ResourceManager->new(
+        factory(['Footprintless::Resource::UrlProvider']));
+    is($manager->resource($url)->get_url(), $url, 'UrlProvider resolve');
+    is(slurp($manager->download($url)), slurp($path), 'UrlProvider download');
+
+    my $http_url = "http://www.google.com/foo";
+    is($manager->resource($http_url)->get_url(), $http_url, 
+        'UrlProvider resolve http');
+}
 
 SKIP: {
     my $test_count = 6;
     my $coordinate = 'com.pastdev:foo:pom:1.0.1';
 
-    my $temp_dir = File::Temp->newdir();
-    my $agent;
     eval {
-        $agent = maven_agent($temp_dir);
+        require Footprintless::Resource::MavenProvider;
     };
-    skip("unable to create maven agent: $@", $test_count) if ($@);
+    skip("unable to require MavenProvider: $@", $test_count) if ($@);
+
+    my $manager = Footprintless::ResourceManager->new(
+        factory(['Footprintless::Test::Resource::MavenProvider']));
 
     my $expected_artifact;
     eval {
-        $expected_artifact = $agent->resolve_or_die($coordinate);
+        $expected_artifact = $manager->resource($coordinate)->get_artifact();
     };
     skip('maven environment not setup', $test_count) if ($@);
     
-    require Footprintless::Resource::MavenProvider;
-    my $manager = Footprintless::ResourceManager->new(
-        Footprintless::Resource::MavenProvider->new($agent));
-    is($manager->resource($coordinate)->get_artifact(),
-        $expected_artifact,
-        'MavenProvider resolve');
-    my $local_repo_artifact_path = File::Spec->catfile($temp_dir, 'HOME', '.m2', 'repository', 
-            'com', 'pastdev', 'foo', '1.0.1', 'foo-1.0.1.pom');
+    ok($expected_artifact, 'MavenProvider resolve');
+    my $local_repo_artifact_path = test_dir(
+        'data', 'maven', 'HOME', '.m2', 'repository',
+        'com', 'pastdev', 'foo', '1.0.1', 'foo-1.0.1.pom');
     my $download_path = $manager->download($coordinate);
-    is($download_path, $local_repo_artifact_path, 'file found in local repo');
-    is(slurp($download_path), slurp($local_repo_artifact_path), 'artifact download matches');
+    ok(-f $download_path, 'file found in local repo');
+    is(slurp($download_path), slurp($local_repo_artifact_path), 
+        'artifact download matches');
 
     $manager = Footprintless::ResourceManager->new(
-        Footprintless::Resource::MavenProvider->new($agent),
-        $url_provider);
+        factory([
+            'Footprintless::Test::Resource::MavenProvider',
+            'Footprintless::Resource::UrlProvider',
+        ]));
     is($manager->resource($coordinate)->get_artifact(), $expected_artifact,
         'both MavenProvider resolve');
     is($manager->resource($path)->get_url(), $url,

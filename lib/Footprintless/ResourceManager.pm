@@ -6,13 +6,17 @@ package Footprintless::ResourceManager;
 # ABSTRACT: A manager for finding and retrieving resources
 # PODNAME: Footprintless::ResourceManager
 
+use parent qw(Footprintless::MixableBase);
+
 use Carp;
+use Footprintless::Mixins qw(
+    _entity
+);
 use Footprintless::Resource::Maven;
 use Footprintless::Resource::Url;
-
-sub new {
-    return bless({}, shift)->_init(@_);
-}
+use Footprintless::Util qw(
+    dynamic_module_new
+);
 
 sub download {
     my ($self, $resource, @options) = @_;
@@ -27,9 +31,30 @@ sub download {
 }
 
 sub _init {
-    my ($self, @providers) = @_;
+    my ($self, @options) = @_;
 
-    $self->{providers} = \@providers;
+    $self->{providers} = ();
+    my $providers = $self->_entity('footprintless.resource_manager.providers');
+    if ($providers) {
+        foreach my $provider_module (@$providers) {
+            push(@{$self->{providers}}, 
+                dynamic_module_new($provider_module, 
+                    $self->{factory}, $self->{coordinate}, @options));
+        }
+    }
+    else {
+        eval {
+            # Maven::Agent may not be available...
+            push(@{$self->{providers}}, 
+                dynamic_module_new(
+                    'Footprintless::Resource::MavenProvider',
+                    $self->{factory}, $self->{coordinate}, @options));
+        };
+
+        push(@{$self->{providers}}, 
+            dynamic_module_new('Footprintless::Resource::UrlProvider', 
+                $self->{factory}, $self->{coordinate}, @options));
+    }
     
     return $self;
 }

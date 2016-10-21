@@ -49,11 +49,9 @@ sub _download {
 }
 
 sub _init {
-    my ($self, $agent) = @_;
+    my ($self) = @_;
 
-    $self->Footprintless::Resource::Provider::_init();
-
-    $self->{agent} = $agent;
+    $self->{agent} = $self->{factory}->agent();
 
     return $self;
 }

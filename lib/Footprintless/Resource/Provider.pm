@@ -6,6 +6,8 @@ package Footprintless::Resource::Provider;
 # ABSTRACT: A contract for providing resources to the resource manager
 # PODNAME: Footprintless::Resource::Provider
 
+use parent qw(Footprintless::MixableBase);
+
 use Carp;
 use Footprintless::Util qw(
     temp_file
@@ -13,10 +15,6 @@ use Footprintless::Util qw(
 use Log::Any;
 
 my $logger = Log::Any->get_logger();
-
-sub new {
-    return bless({}, shift)->_init(@_);
-}
 
 sub download {
     my ($self, $resource, @options) = @_;
@@ -33,11 +31,6 @@ sub download {
 sub _download {
     my ($self, $resource, @options) = @_;
     croak(__PACKAGE__ . " does not support [$resource]");
-}
-
-sub _init {
-    my ($self) = @_;
-    return $self;
 }
 
 sub resource {
@@ -60,10 +53,6 @@ contract that all providers must adhere to.  Providers not intended to
 be used directly.  Instead an instance of 
 C<Footprintless::ResourceManager> should be initialized with an ordered
 list of providers.  See L<Footprintless::ResourceManager> for usage.
-
-=constructor new(@args)
-
-See implementation classes.
 
 =method download($resource, %options)
 

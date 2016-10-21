@@ -8,17 +8,18 @@ package Footprintless::Resource::MavenProvider;
 
 use parent qw(Footprintless::Resource::Provider);
 
+use Maven::Agent;
+
 sub _download {
     my ($self, $resource, %options) = @_;
     return $self->{maven_agent}->download($resource->get_artifact(), %options);
 }
 
 sub _init {
-    my ($self, $maven_agent) = @_;
+    my ($self, %options) = @_;
 
-    $self->Footprintless::Resource::Provider::_init();
-
-    $self->{maven_agent} = $maven_agent;
+    $self->{maven_agent} = Maven::Agent->new(
+        agent => $self->{factory}->agent());
 
     return $self;
 }
@@ -52,12 +53,6 @@ sub supports {
 1;
 
 __END__
-=constructor new($maven_agent)
-
-Creates a new C<Footprintless::Resource::MavenProvider> that will use 
-C<$maven_agent> to retrieve the resources.  C<$maven_agent> should be an 
-instance of C<Maven::Agent>.
-
 =method download($resource, \%options)
 
 Downloads C<$resource> and returns the filename it downloaded to.  If 
