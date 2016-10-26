@@ -20,7 +20,6 @@ our @EXPORT_OK = qw(
     extract
     factory
     invalid_entity
-    resource_manager
     rebase
     slurp
     spurt
@@ -192,24 +191,6 @@ sub rebase {
     return $rebased;
 }
 
-sub REMOVE_ME_resource_manager {
-    my ($agent) = @_;
-    $agent ||= agent();
-
-    my @providers = ();
-    if (require Maven::Agent) {
-        require Footprintless::Resource::MavenProvider;
-        push(@providers, Footprintless::Resource::MavenProvider->new(
-            Maven::Agent->new(agent => $agent)));
-    }
-
-    require Footprintless::ResourceManager;
-    require Footprintless::Resource::UrlProvider;
-    return Footprintless::ResourceManager->new(
-        @providers, 
-        Footprintless::Resource::UrlProvider->new($agent));
-}
-
 sub slurp {
     my ($file) = @_;
     # http://www.perl.com/pub/2003/11/21/slurp.html
@@ -259,7 +240,6 @@ __END__
         dumper
         exit_due_to
         extract
-        resource_manager
         slurp
         spurt
         temp_dir
@@ -360,14 +340,6 @@ Dies with an instance of L<Footprintless::InvalidEntityException>.
 Replaces a portion of the start of C<$path>.  C<\%rebase> must have 2 keys,
 C<from> and C<to>.  The C<from> value will be removed from C<$path> and
 replaced with the C<to> value.
-
-=func resource_manager($agent)
-
-Returns a new instance of C<Footprintless::ResourceManager> configured with 
-a L<maven provider|Footprintless::Resource::MavenProvider> if C<Maven::Agent> 
-is available, and a L<url provider|Footprintless::Resource::UrlProvider> 
-in that order.  If C<$agent> is provided, it will be passed on to the 
-providers.
 
 =func slurp([$file])
 
