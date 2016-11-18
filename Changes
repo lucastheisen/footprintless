@@ -1,5 +1,9 @@
 Revision history for Perl module Footprintless
 
+1.21 2016-11-18
+
+    - added sorting to config dumper and changed json default to json3
+
 1.20 2016-10-21
 
     - added support for resource manager provider configuration

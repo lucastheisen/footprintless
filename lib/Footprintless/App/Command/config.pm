@@ -61,6 +61,7 @@ sub execute {
         my $indent = defined($1) ? $1 : 1;
         $string = Data::Dumper->new([$config])
             ->Indent($indent)
+            ->Sortkeys(1)
             ->Dump();
     }
     elsif ($format eq 'properties') {
@@ -73,7 +74,7 @@ sub execute {
         if (!defined($1) || $1 == 1 || $1 == 3) {
             $json->pretty();
         }
-        if ($1 == 2 || $1 == 3) {
+        if (!defined($1) || $1 == 2 || $1 == 3) {
             $json->canonical(1);
         }
         $string = $json->encode($config);
@@ -118,8 +119,8 @@ Prints out the config at the specified coordinate.  The supported formats are:
     dumper0     Perl Data::Dumper without newlines
     dumper1     Perl Data::Dumper with fixed indentation (2 spaces)
     dumper2     Perl Data::Dumper with dynamic indent
-    dumper3     Perl Data::Dumper with dynamic indant and annotations
-    json        Same as json1
+    dumper3     Perl Data::Dumper with dynamic indent and annotations
+    json        Same as json3
     json0       Compact JSON
     json1       Pretty printed JSON
     json2       JSON with canonically sorted keys
