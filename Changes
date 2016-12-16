@@ -1,5 +1,9 @@
 Revision history for Perl module Footprintless
 
+1.23 2016-12-16
+
+    - fixed multi-template support for resource based overlay
+
 1.22 2016-12-16
 
     - added resource based overlay support

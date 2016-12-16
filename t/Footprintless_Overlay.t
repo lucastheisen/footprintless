@@ -17,7 +17,7 @@ use Footprintless::Util qw(
     slurp 
     spurt
 );
-use Test::More tests => 35;
+use Test::More tests => 55;
 
 BEGIN {use_ok('Footprintless::Overlay')}
 
@@ -375,7 +375,7 @@ SKIP: {
                         resource => File::Spec->catfile($test_dir, 
                             'data','resources', 'overlay.zip'),
                         resolver_coordinate => 'system',
-                        template_dir => 'template',
+                        template_dir => 'template/first',
                         to_dir => $to_dir
                     },
                 },
@@ -387,20 +387,89 @@ SKIP: {
     $overlay->initialize();
     my $foo_file = File::Spec->catfile($to_dir, 'foo.txt');
     my $bar_file = File::Spec->catfile($to_dir, 'bar.txt');
+    my $baz_file = File::Spec->catfile($to_dir, 'baz.txt');
     ok(-f $foo_file, 'resource overlay initialize foo exists');
     is(slurp($foo_file), "hostname=[foo]\n",
         'resource overlay initialize foo matches');
     ok(-f $bar_file, 'resource overlay initialize bar exists');
-    is(slurp($bar_file), "hostname=[$hostname]\n",
+    is(slurp($bar_file), "first.bar.hostname=[$hostname]\n",
         'resource overlay initialize bar matches');
+    ok(-f $baz_file, 'resource overlay initialize baz exists');
+    is(slurp($baz_file), "first.baz.hostname=[$hostname]\n",
+        'resource overlay initialize baz matches');
 
     $overlay->clean();
     ok(!(-e $foo_file), 'resource overlay clean foo');
     ok(!(-e $bar_file), 'resource overlay clean bar');
+    ok(!(-e $baz_file), 'resource overlay clean baz');
 
     $overlay->update();
     ok(!(-e $foo_file), 'resource overlay update foo missing');
     ok(-f $bar_file, 'resource overlay update bar exists');
-    is(slurp($bar_file), "hostname=[$hostname]\n",
+    is(slurp($bar_file), "first.bar.hostname=[$hostname]\n",
         'resource overlay update bar matches');
+    ok(-f $baz_file, 'resource overlay update baz exists');
+    is(slurp($baz_file), "first.baz.hostname=[$hostname]\n",
+        'resource overlay update baz matches');
+}
+
+SKIP: {
+    $logger->info('Verify multi-template resource overlay');
+    my ($temp_dir, $base_dir, $to_dir, $template_dir) = temp_dirs();
+    my $hostname = 'localhost';
+
+    my $overlay = Footprintless::Overlay->new(
+        factory({
+            system => {
+                hostname => $hostname,
+                app => {
+                    'Config::Entities::inherit' => ['hostname'],
+                    overlay => {
+                        'Config::Entities::inherit' => ['hostname', 'sudo_username'],
+                        base_dir => 'base',
+                        clean => ["$to_dir/"],
+                        key => 'T',
+                        os => $^O,
+                        resource => File::Spec->catfile($test_dir, 
+                            'data','resources', 'overlay.zip'),
+                        resolver_coordinate => 'system',
+                        template_dir => [
+                            'template/first',
+                            'template/second',
+                        ],
+                        to_dir => $to_dir
+                    },
+                },
+            }
+        }),
+        'system.app.overlay');
+    ok($overlay, 'multi-template resource overlay constructed');
+
+    $overlay->initialize();
+    my $foo_file = File::Spec->catfile($to_dir, 'foo.txt');
+    my $bar_file = File::Spec->catfile($to_dir, 'bar.txt');
+    my $baz_file = File::Spec->catfile($to_dir, 'baz.txt');
+    ok(-f $foo_file, 'multi-template resource overlay initialize foo exists');
+    is(slurp($foo_file), "hostname=[foo]\n",
+        'multi-template resource overlay initialize foo matches');
+    ok(-f $bar_file, 'multi-template resource overlay initialize bar exists');
+    is(slurp($bar_file), "second.bar.hostname=[$hostname]\n",
+        'multi-template resource overlay initialize bar matches');
+    ok(-f $baz_file, 'multi-template resource overlay initialize baz exists');
+    is(slurp($baz_file), "first.baz.hostname=[$hostname]\n",
+        'multi-template resource overlay initialize baz matches');
+
+    $overlay->clean();
+    ok(!(-e $foo_file), 'multi-template resource overlay clean foo');
+    ok(!(-e $bar_file), 'multi-template resource overlay clean bar');
+    ok(!(-e $baz_file), 'multi-template resource overlay clean baz');
+
+    $overlay->update();
+    ok(!(-e $foo_file), 'multi-template resource overlay update foo missing');
+    ok(-f $bar_file, 'multi-template resource overlay update bar exists');
+    is(slurp($bar_file), "second.bar.hostname=[$hostname]\n",
+        'multi-template resource overlay update bar matches');
+    ok(-f $baz_file, 'multi-template resource overlay update baz exists');
+    is(slurp($baz_file), "first.baz.hostname=[$hostname]\n",
+        'multi-template resource overlay update baz matches');
 }

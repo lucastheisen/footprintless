@@ -53,7 +53,9 @@ sub _dirs_template {
             $base_dir = File::Spec->catdir($unpack_dir, $base_dir);
         }
         if ($template_dir) {
-            $template_dir = File::Spec->catdir($unpack_dir, $template_dir);
+            $template_dir = ref($template_dir) eq 'ARRAY'
+                ? [map {File::Spec->catdir($unpack_dir, $_)} @$template_dir]
+                : File::Spec->catdir($unpack_dir, $template_dir);
         }
     }
 
@@ -297,7 +299,7 @@ A more complex example:
         }
     }
 
-You can even store your overlay base/template content in a resource.  When
+An overlay can obtain base/template content from a resource.  When
 initialize or update are called, the resource will be downloaded (if not
 already local) and extracted to a temp folder.  The C<base_dir> and
 C<template_dir> paths will be appended to the extract temp folder:
@@ -312,6 +314,24 @@ C<template_dir> paths will be appended to the extract temp folder:
         os => 'linux',
         resource => 'com.pastdev:app-overlay:zip:package:1.0.0',
         template_dir => 'template',
+        to_dir => '/opt/foo/tomcat'
+    }
+
+An overlay can have multiple template folders.  If it does, they will
+be processed in the order they are listed:
+
+    overlay => {
+        base_dir => 'base',
+        clean => [
+            '/opt/tomcat/'
+        ],
+        hostname => 'localhost',
+        key => 'T',
+        os => 'linux',
+        template_dir => [
+            'first/template_dir',
+            'second/template_dir',
+        ],
         to_dir => '/opt/foo/tomcat'
     }
 
