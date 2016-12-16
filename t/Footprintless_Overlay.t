@@ -17,7 +17,7 @@ use Footprintless::Util qw(
     slurp 
     spurt
 );
-use Test::More tests => 25;
+use Test::More tests => 35;
 
 BEGIN {use_ok('Footprintless::Overlay')}
 
@@ -353,4 +353,54 @@ SKIP: {
     $overlay->initialize();
     is(slurp($to_file), "hostname=[$hostname]", 'non-local initialize template');
     is(slurp($base_file), "bar", 'non-local initialize base');
+}
+
+SKIP: {
+    $logger->info('Verify resource overlay');
+    my ($temp_dir, $base_dir, $to_dir, $template_dir) = temp_dirs();
+    my $hostname = 'localhost';
+
+    my $overlay = Footprintless::Overlay->new(
+        factory({
+            system => {
+                hostname => $hostname,
+                app => {
+                    'Config::Entities::inherit' => ['hostname'],
+                    overlay => {
+                        'Config::Entities::inherit' => ['hostname', 'sudo_username'],
+                        base_dir => 'base',
+                        clean => ["$to_dir/"],
+                        key => 'T',
+                        os => $^O,
+                        resource => File::Spec->catfile($test_dir, 
+                            'data','resources', 'overlay.zip'),
+                        resolver_coordinate => 'system',
+                        template_dir => 'template',
+                        to_dir => $to_dir
+                    },
+                },
+            }
+        }),
+        'system.app.overlay');
+    ok($overlay, 'resource overlay constructed');
+
+    $overlay->initialize();
+    my $foo_file = File::Spec->catfile($to_dir, 'foo.txt');
+    my $bar_file = File::Spec->catfile($to_dir, 'bar.txt');
+    ok(-f $foo_file, 'resource overlay initialize foo exists');
+    is(slurp($foo_file), "hostname=[foo]\n",
+        'resource overlay initialize foo matches');
+    ok(-f $bar_file, 'resource overlay initialize bar exists');
+    is(slurp($bar_file), "hostname=[$hostname]\n",
+        'resource overlay initialize bar matches');
+
+    $overlay->clean();
+    ok(!(-e $foo_file), 'resource overlay clean foo');
+    ok(!(-e $bar_file), 'resource overlay clean bar');
+
+    $overlay->update();
+    ok(!(-e $foo_file), 'resource overlay update foo missing');
+    ok(-f $bar_file, 'resource overlay update bar exists');
+    is(slurp($bar_file), "hostname=[$hostname]\n",
+        'resource overlay update bar matches');
 }

@@ -1,5 +1,9 @@
 Revision history for Perl module Footprintless
 
+1.22 2016-12-16
+
+    - added resource based overlay support
+
 1.21 2016-11-18
 
     - added sorting to config dumper and changed json default to json3

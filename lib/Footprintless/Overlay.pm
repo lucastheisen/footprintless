@@ -46,6 +46,7 @@ sub _dirs_template {
     my $unpack_dir;
     my $resource = $self->_sub_entity('resource');
     if ($resource) {
+        $unpack_dir = temp_dir();
         $self->_extract_resource($resource, $unpack_dir);
 
         if ($base_dir) {
@@ -294,6 +295,24 @@ A more complex example:
                 password => $properties->{'foo.tomcat.trust_store.password'},
             }
         }
+    }
+
+You can even store your overlay base/template content in a resource.  When
+initialize or update are called, the resource will be downloaded (if not
+already local) and extracted to a temp folder.  The C<base_dir> and
+C<template_dir> paths will be appended to the extract temp folder:
+
+    overlay => {
+        base_dir => 'base',
+        clean => [
+            '/opt/tomcat/'
+        ],
+        hostname => 'localhost',
+        key => 'T',
+        os => 'linux',
+        resource => 'com.pastdev:app-overlay:zip:package:1.0.0',
+        template_dir => 'template',
+        to_dir => '/opt/foo/tomcat'
     }
 
 =head1 CONFIGURATION
