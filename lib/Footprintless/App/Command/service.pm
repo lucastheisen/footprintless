@@ -9,22 +9,25 @@ use Log::Any;
 
 my $logger = Log::Any->get_logger();
 
-# ABSTRACT: Performs an action on a service.
+# ABSTRACT: Performs an action on one or more services.
 # PODNAME: Footprintless::App::Command::service
 
 sub execute {
     my ($self, $opts, $args) = @_;
     my ($coordinate, $action) = @$args;
 
-    $logger->debugf('executing %s for %s', $action, $coordinate);
-    eval {
-        $self->{service}->execute($action);
-    };
-    if ($@) {
-        if (ref($@) && $@->isa('Footprintless::InvalidEntityException')) {
-            $self->usage_error($@);
+    foreach my $target (@{$self->{targets}}) {
+        $logger->debugf('executing %s for %s', $action, 
+            $target->{coordinate});
+        eval {
+            $target->execute($action);
+        };
+        if ($@) {
+            if (ref($@) && $@->isa('Footprintless::InvalidEntityException')) {
+                $self->usage_error($@);
+            }
+            exit_due_to($@, 1);
         }
-        exit_due_to($@, 1);
     }
 }
 
@@ -34,23 +37,32 @@ sub usage_desc {
 
 sub validate_args {
     my ($self, $opt, $args) = @_;
-    my ($coordinate, $action) = @$args;
+    my ($coordinate, $action, @sub_coordinates) = @$args;
 
     $self->usage_error("coordinate is required") unless ($coordinate);
     $self->usage_error("action is required") unless ($action);
 
     my $footprintless = $self->app()->footprintless();
-    eval {
-        $self->{service} = $self->app()->footprintless()->service($coordinate);
-    };
-    if ($@) {
-        if (ref($@) && $@->isa('Footprintless::InvalidEntityException')) {
-            $self->usage_error($@);
-        }
-        else {
-            $self->usage_error("invalid coordinate [$coordinate]: $@");
+
+    my @target_coordinates = @sub_coordinates
+        ? map {"$coordinate.$_"} @sub_coordinates
+        : ($coordinate);
+
+    my @targets = ();
+    foreach my $target_coordinate (@target_coordinates) {
+        eval {
+            push(@targets, $footprintless->service($target_coordinate));
+        };
+        if ($@) {
+            if (ref($@) && $@->isa('Footprintless::InvalidEntityException')) {
+                $self->usage_error($@);
+            }
+            else {
+                $self->usage_error("invalid coordinate [$target_coordinate]: $@");
+            }
         }
     }
+    $self->{targets} = \@targets;
 }
 
 1;
@@ -59,10 +71,20 @@ __END__
 
 =head1 SYNOPSIS
 
+    # one service at a time:
+    
     fpl service foo.prod.web.service kill
     fpl service foo.dev.app.service start
     fpl service bar.qa.db.service status
     fpl service baz.beta.support.service stop
+
+    # or multiple services:
+    
+    # starts:
+    #   - baz.beta.support.service
+    #   - baz.beta.web.service
+    #   - baz.beta.app.service
+    fpl service baz.beta start support.service web.service app.service
 
 =head1 DESCRIPTION
 
