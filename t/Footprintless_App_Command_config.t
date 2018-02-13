@@ -8,7 +8,7 @@ use Data::Dumper;
 use Footprintless;
 use File::Basename;
 use File::Spec;
-use Test::More tests => 3;
+use Test::More tests => 4;
 
 BEGIN {use_ok('Footprintless::App')}
 
@@ -36,6 +36,14 @@ $ENV{FPL_CONFIG_PROPS} = File::Spec->catfile($test_dir, 'config', 'properties.pl
     . (($^O eq 'MSWin32') ? ';' : ':')
     . File::Spec->catfile($test_dir, 'config', 'environment.pl');
 
+is(test_app('Footprintless::App' => 
+    [
+        'config',
+        'dev.foo.site',
+        '--format',
+        'dumper0' 
+    ])->stdout(), 
+    "\$VAR1 = '';", 'dev.foo.site empty string');
 is(test_app('Footprintless::App' => 
     [
         'config',

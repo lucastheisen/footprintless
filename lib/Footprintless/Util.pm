@@ -211,7 +211,7 @@ sub spurt {
 sub temp_dir {
     require File::Temp;
     my $temp = File::Temp->newdir('fpl_XXXXXXXX', TMPDIR => 1);
-    if (!chmod(02700, $temp)) {
+    if (!chmod(0700, $temp)) {
         croak("unable to create secure temp file");
     }
     return $temp;
