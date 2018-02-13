@@ -228,6 +228,10 @@ sub temp_file {
     return $temp;
 }
 
+sub terse_dumper {
+    Data::Dumper->new(\@_)->Indent(1)->Sortkeys(1)->Terse(1)->Dump();
+}
+
 1;
 
 __END__
@@ -361,6 +365,13 @@ C<File::Temp::HIGH> for extra safety.
 Creates a new temporary directory with mode C<2700>.
 Returns the new L<File::Temp> object.  Uses C<File::Temp> so you can set
 C<File::Temp::HIGH> for extra safety.
+
+=func terse_dumper(@to_dump)
+
+Prints a dump of C<@to_dump> using C<Data::Dumper> with C<Data::Dumper::Indent>
+set to 1 and C<Data::Dumper::Terse> set to 1 - this will basically be the same
+as the C<dumper()> function, except it will not include the variable name
+(C<$VAR1 = >).
 
 =over 4
 
