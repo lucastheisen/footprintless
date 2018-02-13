@@ -25,6 +25,7 @@ our @EXPORT_OK = qw(
     spurt
     temp_dir
     temp_file
+    terse_dumper
 );
 
 my $logger = Log::Any->get_logger();
